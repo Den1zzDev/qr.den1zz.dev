@@ -1,0 +1,8 @@
+[build]
+target = "index.html"
+dist = "dist"
+release = false
+
+[watch]
+watch = ["src", "index.html"]
+ignore = ["dist"]
