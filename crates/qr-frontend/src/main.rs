@@ -16,12 +16,15 @@ pub fn App() -> impl IntoView {
     // Primary Input State
     let (input_text, set_input_text) = signal("https://den1zz.dev".to_string());
 
-    // Essential Styling State (KISS: Ente Classy as default!)
+    // Essential Styling State (Ente Classy as default)
     let (module_shape, set_module_shape) = signal(ModuleShape::Classy);
     let (eye_frame_shape, set_eye_frame_shape) = signal(EyeFrameShape::Rounded);
-    let (code_color, set_code_color) = signal("#3fd9ff".to_string());
+
+    // Color Pickers for Module and Eye
+    let (module_color, set_module_color) = signal("#00f0ff".to_string());
+    let (eye_color, set_eye_color) = signal("#ffffff".to_string());
     let (is_transparent_bg, set_is_transparent_bg) = signal(false);
-    let (bg_color, set_bg_color) = signal("#04070d".to_string());
+    let (bg_color, set_bg_color) = signal("#000000".to_string());
 
     // Optional Center Logo
     let (logo_data_url, set_logo_data_url) = signal(Option::<String>::None);
@@ -30,7 +33,7 @@ pub fn App() -> impl IntoView {
     let (target_res, set_target_res) = signal(1024u32);
     let (notification_msg, set_notification_msg) = signal(Option::<String>::None);
 
-    // Dynamic Query Parameter Inspector (ha.mr / tools.ralite.dev philosophy)
+    // Dynamic Query Parameter Inspector (ha.mr & tools.ralite.dev philosophy)
     let query_info = Memo::new(move |_| {
         let text = input_text.get();
         inspect_url_query(&text)
@@ -75,9 +78,9 @@ pub fn App() -> impl IntoView {
             module_shape: module_shape.get(),
             eye_frame_shape: eye_frame_shape.get(),
             eye_dot_shape: EyeDotShape::Circle,
-            code_color: code_color.get(),
+            code_color: module_color.get(),
             gradient: None,
-            eye_color: None,
+            eye_color: Some(eye_color.get()),
             bg_color: bg,
             logo,
             cta: None,
@@ -88,22 +91,25 @@ pub fn App() -> impl IntoView {
         Ok((matrix, svg))
     });
 
-    // Contrast calculation
-    let contrast_ratio = Memo::new(move |_| {
-        let code = code_color.get();
+    // Contrast calculation for both Module and Eye against Background
+    let contrast_ratios = Memo::new(move |_| {
+        let mod_c = module_color.get();
+        let eye_c = eye_color.get();
         let bg = if is_transparent_bg.get() {
             "#FFFFFF"
         } else {
             &bg_color.get()
         };
-        calculate_contrast_ratio(&code, bg)
+        let r_mod = calculate_contrast_ratio(&mod_c, bg);
+        let r_eye = calculate_contrast_ratio(&eye_c, bg);
+        (r_mod, r_eye)
     });
 
     // Temporary notification helper
     let show_toast = move |msg: String| {
         set_notification_msg.set(Some(msg));
         wasm_bindgen_futures::spawn_local(async move {
-            gloo_timers::future::TimeoutFuture::new(2400).await;
+            gloo_timers::future::TimeoutFuture::new(2200).await;
             set_notification_msg.set(None);
         });
     };
@@ -185,19 +191,22 @@ pub fn App() -> impl IntoView {
         }
     };
 
+    let color_presets = ["#00f0ff", "#ffffff", "#38ef7d", "#ff3b80", "#f59e0b", "#a855f7"];
+
     view! {
-        <div class="min-h-screen bg-[#04070d] text-[#e6f1f5] pb-16 selection:bg-[#3fd9ff]/25 selection:text-[#3fd9ff]">
-            // Floating Pill Navigation Bar
+        <div class="min-h-screen bg-[#000000] text-[#ffffff] pb-16 selection:bg-[#00f0ff]/25 selection:text-[#00f0ff]">
+            // Clean Pill Navigation Bar
             <div class="site-nav-wrap mb-8">
                 <nav class="site-nav">
                     <a href="/" class="flex items-center gap-2 text-sm font-bold tracking-tight">
-                        <span class="chromatic-text" data-text="qr.den1zz.dev">"qr.den1zz.dev"</span>
+                        <span class="text-[#00f0ff]">"qr."</span>
+                        <span class="text-[#ffffff]">"den1zz.dev"</span>
                     </a>
 
                     <div class="flex items-center gap-2">
                         <div class="status-badge py-0.5 px-2.5 text-[11px]">
                             <span class="status-dot-active"></span>
-                            <span>"ONLINE // PURE RUST"</span>
+                            <span>"ONLINE // RUST"</span>
                         </div>
                     </div>
 
@@ -208,37 +217,38 @@ pub fn App() -> impl IntoView {
                         class="button button-secondary text-xs py-1 px-3"
                     >
                         <span>"den1zz.dev"</span>
-                        <span class="text-[#3fd9ff]">"↗"</span>
+                        <span class="text-[#00f0ff]">"↗"</span>
                     </a>
                 </nav>
             </div>
 
             // Main Focused Container (KISS Philosophy)
-            <main class="w-full max-w-[720px] mx-auto px-4 space-y-6">
-                // Clean Hero Eyebrow
-                <div class="text-center space-y-2">
-                    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight">
-                        <span class="chromatic-text" data-text="Simple QR Code Studio">"Simple QR Code Studio"</span>
+            <main class="w-full max-w-[680px] mx-auto px-4 space-y-5">
+                // Clean Minimal Hero
+                <div class="text-center space-y-1.5">
+                    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight brand-title">
+                        <span class="text-[#ffffff]">"QR Code "</span>
+                        <span class="text-[#00f0ff]">"Studio"</span>
                     </h1>
-                    <p class="text-xs sm:text-sm text-[#93a8b3] font-sans max-w-md mx-auto">
-                        "Fast, private, client-side QR generation with Ente classy modules and smart URL parameter stripping."
+                    <p class="text-xs text-[#a0a0a0] font-sans max-w-sm mx-auto">
+                        "Ente classy modules, dual color pickers, and URL query cleaner running in pure WebAssembly."
                     </p>
                 </div>
 
                 // 1. Primary Input Box
-                <div class="glass-panel p-5 space-y-3">
+                <div class="glass-panel p-4 sm:p-5 space-y-3">
                     <div class="relative flex items-center">
                         <input
                             type="text"
-                            class="w-full text-sm sm:text-base py-3 pl-4 pr-10 rounded-xl bg-[#080d16] border border-[rgba(63,217,255,0.22)] focus:border-[#3fd9ff] text-[#e6f1f5] placeholder:text-[#56636b] outline-none transition-all shadow-inner font-mono"
-                            placeholder="Paste link or enter text to encode..."
+                            class="w-full text-sm sm:text-base py-3 pl-4 pr-10 rounded-xl bg-[#050505] border border-[rgba(255,255,255,0.12)] focus:border-[#00f0ff] text-[#ffffff] placeholder:text-[#555555] outline-none transition-all shadow-inner font-mono"
+                            placeholder="Paste URL or enter text..."
                             prop:value=move || input_text.get()
                             on:input=move |ev| set_input_text.set(event_target_value(&ev))
                         />
                         {move || if !input_text.get().is_empty() {
                             view! {
                                 <button
-                                    class="absolute right-3 text-[#93a8b3] hover:text-[#e6f1f5] p-1 text-sm font-mono"
+                                    class="absolute right-3 text-[#a0a0a0] hover:text-[#ffffff] p-1 text-sm font-mono"
                                     title="Clear input"
                                     on:click=move |_| set_input_text.set(String::new())
                                 >
@@ -250,25 +260,25 @@ pub fn App() -> impl IntoView {
                         }}
                     </div>
 
-                    // 2. ha.mr & tools.ralite.dev Query Warning and Parameter Stripper
+                    // 2. Query Cleaner Prompt (ha.mr / tools.ralite.dev style)
                     {move || query_info.get().map(|info| {
                         view! {
-                            <div class="p-4 rounded-xl bg-[#080d16]/95 border border-[#3fd9ff]/40 space-y-2.5 text-left transition-all">
+                            <div class="p-4 rounded-xl bg-[#080808] border border-[#00f0ff]/40 space-y-2.5 text-left transition-all">
                                 <div class="flex items-center justify-between text-xs">
-                                    <span class="font-bold text-[#3fd9ff] flex items-center gap-1.5 tracking-wide">
+                                    <span class="font-bold text-[#00f0ff] flex items-center gap-1.5 tracking-wide">
                                         <span>"⚠️"</span>
                                         <span>"Consider removing parameters..."</span>
                                     </span>
-                                    <span class="text-[11px] font-mono text-[#93a8b3]">
+                                    <span class="text-[11px] font-mono text-[#a0a0a0]">
                                         {format!("{} query parameters detected", info.total_param_count)}
                                     </span>
                                 </div>
-                                <p class="text-xs text-[#93a8b3] leading-relaxed font-sans">
-                                    "Some links include data that is not necessary for the link to function, such as tracking tokens, analytics, or page state. Removing these segments shortens the URL, resulting in a cleaner, much faster-to-scan QR code."
+                                <p class="text-xs text-[#a0a0a0] leading-relaxed font-sans">
+                                    "Removing tracking tokens or transient URL query parameters shortens the link, generating a simpler and faster-to-scan QR code."
                                 </p>
                                 <div class="flex flex-wrap items-center gap-2 pt-1">
                                     <button
-                                        class="button button-primary text-xs py-1.5 px-3.5"
+                                        class="button button-primary text-xs py-1 px-3.5"
                                         on:click=move |_| {
                                             let cur = input_text.get();
                                             let cleaned = strip_all_query(&cur);
@@ -283,7 +293,7 @@ pub fn App() -> impl IntoView {
                                     {if info.tracking_param_count > 0 {
                                         view! {
                                             <button
-                                                class="button button-secondary text-xs py-1.5 px-3.5"
+                                                class="button button-secondary text-xs py-1 px-3.5"
                                                 on:click=move |_| {
                                                     let cur = input_text.get();
                                                     let (cleaned, count) = strip_tracking_query(&cur);
@@ -304,8 +314,8 @@ pub fn App() -> impl IntoView {
                     })}
                 </div>
 
-                // 3. Live QR Viewport Stage
-                <div class="glass-panel p-6 flex flex-col items-center justify-center relative">
+                // 2. Live AMOLED QR Viewport Stage
+                <div class="glass-panel p-5 sm:p-6 flex flex-col items-center justify-center relative">
                     <div class="hud-reticle hud-tl"></div>
                     <div class="hud-reticle hud-tr"></div>
                     <div class="hud-reticle hud-bl"></div>
@@ -313,24 +323,29 @@ pub fn App() -> impl IntoView {
 
                     {move || match qr_result_memo.get() {
                         Ok((matrix, svg)) => {
-                            let ratio = contrast_ratio.get();
-                            let is_high_contrast = ratio >= 3.5;
+                            let (mod_ratio, eye_ratio) = contrast_ratios.get();
+                            let is_mod_ok = mod_ratio >= 3.0;
+                            let is_eye_ok = eye_ratio >= 3.0;
+                            let all_ok = is_mod_ok && is_eye_ok;
+
                             view! {
                                 <div class="w-full flex flex-col items-center justify-center space-y-4">
                                     // Scannability status pill
-                                    <div class="flex items-center gap-2 text-xs font-mono px-3 py-1 rounded-full bg-[#080d16] border border-[rgba(63,217,255,0.18)]">
-                                        <span class=if is_high_contrast {
+                                    <div class="flex items-center gap-2 text-xs font-mono px-3 py-1 rounded-full bg-[#050505] border border-[rgba(255,255,255,0.12)]">
+                                        <span class=if all_ok {
                                             "w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"
                                         } else {
                                             "w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24]"
                                         }></span>
-                                        <span class="text-[#e6f1f5]">
-                                            {if is_high_contrast { "High Contrast" } else { "Low Contrast" }}
+                                        <span class="text-[#ffffff]">
+                                            {if all_ok { "Ready to Scan" } else { "Low Contrast" }}
                                         </span>
-                                        <span class="text-[#56636b]">"•"</span>
-                                        <span class="text-[#3fd9ff]">{format!("{ratio:.1}:1")}</span>
-                                        <span class="text-[#56636b]">"•"</span>
-                                        <span class="text-[#93a8b3]">{format!("v{} ({}×{})", matrix.version, matrix.size, matrix.size)}</span>
+                                        <span class="text-[#555555]">"•"</span>
+                                        <span class="text-[#00f0ff]" title="Module Contrast">{format!("M:{mod_ratio:.1}:1")}</span>
+                                        <span class="text-[#555555]">"•"</span>
+                                        <span class="text-[#ffffff]" title="Eye Contrast">{format!("E:{eye_ratio:.1}:1")}</span>
+                                        <span class="text-[#555555]">"•"</span>
+                                        <span class="text-[#a0a0a0]">{format!("v{} ({}×{})", matrix.version, matrix.size, matrix.size)}</span>
                                     </div>
 
                                     // Viewfinder Frame
@@ -355,20 +370,19 @@ pub fn App() -> impl IntoView {
                     // Toast Notification
                     {move || notification_msg.get().map(|msg| {
                         view! {
-                            <div class="absolute bottom-4 px-4 py-1.5 rounded-full bg-[#080d16] border border-[#3fd9ff] text-[#3fd9ff] text-xs font-mono font-bold shadow-[0_0_20px_rgba(63,217,255,0.4)]">
+                            <div class="absolute bottom-4 px-4 py-1.5 rounded-full bg-[#050505] border border-[#00f0ff] text-[#00f0ff] text-xs font-mono font-bold shadow-[0_0_15px_rgba(0,240,255,0.35)]">
                                 {msg}
                             </div>
                         }
                     })}
                 </div>
 
-                // 4. Essential Customization Toolbar (KISS)
-                <div class="glass-panel p-5 space-y-4">
-                    // Shape & Corners in a clean row
+                // 3. Module & Eye Shape Configuration
+                <div class="glass-panel p-4 sm:p-5 space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         // Module Shape
                         <div>
-                            <label class="block text-[#93a8b3] text-[11px] mb-1.5 uppercase font-semibold">"Module Shape"</label>
+                            <label class="block text-[#a0a0a0] text-[11px] mb-1.5 uppercase font-semibold">"Module Shape"</label>
                             <div class="grid grid-cols-4 gap-1">
                                 {
                                     let shapes = [
@@ -383,9 +397,9 @@ pub fn App() -> impl IntoView {
                                                 class=move || {
                                                     let active = module_shape.get() == sh;
                                                     if active {
-                                                        "py-1.5 text-xs rounded-md border border-[#3fd9ff] bg-[#3fd9ff]/15 text-[#3fd9ff] font-bold shadow-[0_0_10px_rgba(63,217,255,0.2)]"
+                                                        "py-1.5 text-xs rounded-md border border-[#00f0ff] bg-[#00f0ff]/15 text-[#00f0ff] font-bold"
                                                     } else {
-                                                        "py-1.5 text-xs rounded-md border border-[rgba(63,217,255,0.18)] bg-[#080d16] text-[#93a8b3] hover:text-[#e6f1f5]"
+                                                        "py-1.5 text-xs rounded-md border border-[rgba(255,255,255,0.12)] bg-[#050505] text-[#a0a0a0] hover:text-[#ffffff]"
                                                     }
                                                 }
                                                 on:click=move |_| set_module_shape.set(sh)
@@ -400,7 +414,7 @@ pub fn App() -> impl IntoView {
 
                         // Eye Frame Shape
                         <div>
-                            <label class="block text-[#93a8b3] text-[11px] mb-1.5 uppercase font-semibold">"Eye Shape"</label>
+                            <label class="block text-[#a0a0a0] text-[11px] mb-1.5 uppercase font-semibold">"Eye Shape"</label>
                             <div class="grid grid-cols-3 gap-1">
                                 {
                                     let frames = [
@@ -414,9 +428,9 @@ pub fn App() -> impl IntoView {
                                                 class=move || {
                                                     let active = eye_frame_shape.get() == f;
                                                     if active {
-                                                        "py-1.5 text-xs rounded-md border border-[#3fd9ff] bg-[#3fd9ff]/15 text-[#3fd9ff] font-bold shadow-[0_0_10px_rgba(63,217,255,0.2)]"
+                                                        "py-1.5 text-xs rounded-md border border-[#00f0ff] bg-[#00f0ff]/15 text-[#00f0ff] font-bold"
                                                     } else {
-                                                        "py-1.5 text-xs rounded-md border border-[rgba(63,217,255,0.18)] bg-[#080d16] text-[#93a8b3] hover:text-[#e6f1f5]"
+                                                        "py-1.5 text-xs rounded-md border border-[rgba(255,255,255,0.12)] bg-[#050505] text-[#a0a0a0] hover:text-[#ffffff]"
                                                     }
                                                 }
                                                 on:click=move |_| set_eye_frame_shape.set(f)
@@ -429,40 +443,109 @@ pub fn App() -> impl IntoView {
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    // Color & Logo row
-                    <div class="pt-3 border-t border-[rgba(63,217,255,0.18)] flex flex-wrap items-center justify-between gap-4">
-                        // Color Swatches
-                        <div class="flex items-center gap-2">
-                            <label class="text-xs text-[#93a8b3] font-semibold">"Color:"</label>
-                            <div class="flex items-center gap-1.5">
-                                {
-                                    let swatches = ["#3fd9ff", "#ffffff", "#38ef7d", "#ff3b80", "#f59e0b", "#a855f7"];
-                                    swatches.into_iter().map(|hex| {
-                                        view! {
-                                            <button
-                                                class="w-6 h-6 rounded-full border border-white/20 transition-transform hover:scale-110 cursor-pointer"
-                                                style=format!("background-color: {hex}")
-                                                on:click=move |_| set_code_color.set(hex.to_string())
-                                            ></button>
-                                        }
-                                    }).collect_view()
-                                }
+                // 4. Dual Color Pickers: Module Color & Eye Color
+                <div class="glass-panel p-4 sm:p-5 space-y-4">
+                    <div class="text-[11px] uppercase font-semibold text-[#a0a0a0] tracking-wider pb-1 border-b border-[rgba(255,255,255,0.08)]">
+                        "Colors & Palette"
+                    </div>
+
+                    // Module Color Picker
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-[#ffffff] flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full" style=move || format!("background-color: {}", module_color.get())></span>
+                                <span>"Module Color (Data Matrix)"</span>
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <input
+                                    type="color"
+                                    class="w-6 h-6 rounded bg-transparent border border-white/20 cursor-pointer"
+                                    prop:value=move || module_color.get()
+                                    on:input=move |ev| set_module_color.set(event_target_value(&ev))
+                                />
+                                <input
+                                    type="text"
+                                    class="w-24 text-xs font-mono uppercase bg-[#050505] border border-[rgba(255,255,255,0.12)] rounded px-2 py-1 text-center"
+                                    prop:value=move || module_color.get()
+                                    on:input=move |ev| set_module_color.set(event_target_value(&ev))
+                                />
                             </div>
-                            <input
-                                type="color"
-                                class="w-6 h-6 rounded bg-transparent border border-[rgba(63,217,255,0.25)] cursor-pointer ml-1"
-                                prop:value=move || code_color.get()
-                                on:input=move |ev| set_code_color.set(event_target_value(&ev))
-                            />
                         </div>
 
-                        // Background Color & Transparent Toggle
-                        <div class="flex items-center gap-2">
-                            <label class="flex items-center gap-2 text-xs text-[#93a8b3] hover:text-[#e6f1f5] cursor-pointer select-none">
+                        // Presets
+                        <div class="flex items-center gap-1.5">
+                            {
+                                color_presets.into_iter().map(|hex| {
+                                    view! {
+                                        <button
+                                            class="w-6 h-6 rounded-full border border-white/20 transition-transform hover:scale-110 cursor-pointer"
+                                            style=format!("background-color: {hex}")
+                                            title=format!("Set module color to {hex}")
+                                            on:click=move |_| set_module_color.set(hex.to_string())
+                                        ></button>
+                                    }
+                                }).collect_view()
+                            }
+                        </div>
+                    </div>
+
+                    // Eye Color Picker
+                    <div class="space-y-2 pt-3 border-t border-[rgba(255,255,255,0.08)]">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-[#ffffff] flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full" style=move || format!("background-color: {}", eye_color.get())></span>
+                                <span>"Eye Color (Corner Finders)"</span>
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <button
+                                    class="text-[11px] text-[#00f0ff] hover:underline cursor-pointer mr-1 font-mono"
+                                    title="Match module color"
+                                    on:click=move |_| set_eye_color.set(module_color.get())
+                                >
+                                    "Sync"
+                                </button>
+                                <input
+                                    type="color"
+                                    class="w-6 h-6 rounded bg-transparent border border-white/20 cursor-pointer"
+                                    prop:value=move || eye_color.get()
+                                    on:input=move |ev| set_eye_color.set(event_target_value(&ev))
+                                />
+                                <input
+                                    type="text"
+                                    class="w-24 text-xs font-mono uppercase bg-[#050505] border border-[rgba(255,255,255,0.12)] rounded px-2 py-1 text-center"
+                                    prop:value=move || eye_color.get()
+                                    on:input=move |ev| set_eye_color.set(event_target_value(&ev))
+                                />
+                            </div>
+                        </div>
+
+                        // Presets
+                        <div class="flex items-center gap-1.5">
+                            {
+                                color_presets.into_iter().map(|hex| {
+                                    view! {
+                                        <button
+                                            class="w-6 h-6 rounded-full border border-white/20 transition-transform hover:scale-110 cursor-pointer"
+                                            style=format!("background-color: {hex}")
+                                            title=format!("Set eye color to {hex}")
+                                            on:click=move |_| set_eye_color.set(hex.to_string())
+                                        ></button>
+                                    }
+                                }).collect_view()
+                            }
+                        </div>
+                    </div>
+
+                    // Background & Optional Logo
+                    <div class="pt-3 border-t border-[rgba(255,255,255,0.08)] flex flex-wrap items-center justify-between gap-4">
+                        // Background Controls
+                        <div class="flex items-center gap-3">
+                            <label class="flex items-center gap-2 text-xs text-[#a0a0a0] hover:text-[#ffffff] cursor-pointer select-none">
                                 <input
                                     type="checkbox"
-                                    class="rounded accent-[#3fd9ff]"
+                                    class="rounded accent-[#00f0ff]"
                                     prop:checked=move || is_transparent_bg.get()
                                     on:change=move |ev| set_is_transparent_bg.set(event_target_checked(&ev))
                                 />
@@ -471,25 +554,28 @@ pub fn App() -> impl IntoView {
 
                             {move || if !is_transparent_bg.get() {
                                 view! {
-                                    <input
-                                        type="color"
-                                        class="w-6 h-6 rounded bg-transparent border border-[rgba(63,217,255,0.25)] cursor-pointer"
-                                        title="Background Color"
-                                        prop:value=move || bg_color.get()
-                                        on:input=move |ev| set_bg_color.set(event_target_value(&ev))
-                                    />
+                                    <div class="flex items-center gap-1.5 text-xs text-[#a0a0a0]">
+                                        <span>"BG:"</span>
+                                        <input
+                                            type="color"
+                                            class="w-5 h-5 rounded bg-transparent border border-white/20 cursor-pointer"
+                                            title="Background Color"
+                                            prop:value=move || bg_color.get()
+                                            on:input=move |ev| set_bg_color.set(event_target_value(&ev))
+                                        />
+                                    </div>
                                 }.into_any()
                             } else {
                                 view! {}.into_any()
                             }}
                         </div>
 
-                        // Optional Center Logo upload
+                        // Optional Center Logo
                         <div class="flex items-center gap-2">
                             {move || if logo_data_url.get().is_some() {
                                 view! {
                                     <button
-                                        class="text-xs text-rose-400 hover:underline"
+                                        class="text-xs text-rose-400 hover:underline cursor-pointer"
                                         on:click=move |_| set_logo_data_url.set(None)
                                     >
                                         "Remove Logo"
@@ -497,7 +583,7 @@ pub fn App() -> impl IntoView {
                                 }.into_any()
                             } else {
                                 view! {
-                                    <label class="text-xs text-[#3fd9ff] hover:underline cursor-pointer">
+                                    <label class="text-xs text-[#00f0ff] hover:underline cursor-pointer">
                                         <span>"+ Add Center Logo"</span>
                                         <input
                                             type="file"
@@ -530,10 +616,10 @@ pub fn App() -> impl IntoView {
                     </div>
                 </div>
 
-                // 5. One-Click Export Bar
-                <div class="glass-panel p-5 space-y-3">
-                    <div class="flex items-center justify-between text-xs pb-2 border-b border-[rgba(63,217,255,0.18)]">
-                        <span class="text-[#93a8b3] font-semibold uppercase text-[11px]">"Resolution"</span>
+                // 5. One-Click Export Toolbar
+                <div class="glass-panel p-4 sm:p-5 space-y-3">
+                    <div class="flex items-center justify-between text-xs pb-2 border-b border-[rgba(255,255,255,0.08)]">
+                        <span class="text-[#a0a0a0] font-semibold uppercase text-[11px]">"Resolution"</span>
                         <div class="flex gap-1">
                             {
                                 let resolutions = [512u32, 1024u32, 2048u32];
@@ -543,9 +629,9 @@ pub fn App() -> impl IntoView {
                                             class=move || {
                                                 let is_act = target_res.get() == res;
                                                 if is_act {
-                                                    "px-2.5 py-0.5 rounded-full bg-[#3fd9ff] text-[#04070d] font-bold text-[11px] shadow-[0_0_12px_rgba(63,217,255,0.35)]"
+                                                    "px-2.5 py-0.5 rounded-full bg-[#00f0ff] text-[#000000] font-bold text-[11px]"
                                                 } else {
-                                                    "px-2.5 py-0.5 rounded-full text-[#93a8b3] hover:text-[#e6f1f5] text-[11px]"
+                                                    "px-2.5 py-0.5 rounded-full text-[#a0a0a0] hover:text-[#ffffff] text-[11px]"
                                                 }
                                             }
                                             on:click=move |_| set_target_res.set(res)
@@ -560,7 +646,7 @@ pub fn App() -> impl IntoView {
 
                     <div class="flex flex-col sm:flex-row items-center gap-2.5">
                         <button
-                            class="button button-primary w-full sm:flex-1 py-2.5 text-center text-xs font-bold"
+                            class="button button-primary w-full sm:flex-1 py-2 text-center text-xs font-bold"
                             on:click=move |_| {
                                 let res = target_res.get();
                                 if let Ok((_, svg)) = qr_result_memo.get() {
@@ -572,7 +658,7 @@ pub fn App() -> impl IntoView {
                         </button>
 
                         <button
-                            class="button button-secondary w-full sm:w-auto py-2.5 px-4 text-xs font-semibold"
+                            class="button button-white w-full sm:w-auto py-2 px-4 text-xs font-semibold"
                             on:click=move |_| {
                                 if let Ok((_, svg)) = qr_result_memo.get() {
                                     download_svg(svg);
@@ -583,7 +669,7 @@ pub fn App() -> impl IntoView {
                         </button>
 
                         <button
-                            class="button button-secondary w-full sm:w-auto py-2.5 px-4 text-xs font-semibold"
+                            class="button button-secondary w-full sm:w-auto py-2 px-4 text-xs font-semibold"
                             on:click=move |_| {
                                 if let Ok((_, svg)) = qr_result_memo.get() {
                                     copy_text_to_clipboard(svg, "SVG");
