@@ -6,7 +6,7 @@
   <title>QR Code Studio — qr.den1zz.dev</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -14,51 +14,336 @@
       theme: {
         extend: {
           fontFamily: {
-            mono: ['"JetBrains Mono"', 'monospace'],
+            mono: ['"Maple Mono NF"', '"Maple Mono"', '"JetBrains Mono"', 'ui-monospace', 'monospace'],
+            sans: ['"Inter"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
           },
           colors: {
-            bg: '#09090b',
-            surface: '#121215',
-            'surface-hover': '#1a1a1f',
-            edge: '#27272a',
-            'edge-active': '#3f3f46',
-            ink: '#f4f4f5',
-            muted: '#a1a1aa',
-            purple: '#a855f7',
-            'purple-subtle': '#3b1d54',
+            bg: '#04070d',
+            'bg-elevated': '#080d16',
+            panel: 'rgba(10, 17, 27, 0.72)',
+            'panel-border': 'rgba(63, 217, 255, 0.18)',
+            accent: '#3fd9ff',
+            'accent-dim': '#1c7d92',
+            'accent-glow': 'rgba(63, 217, 255, 0.35)',
+            text: '#e6f1f5',
+            'text-dim': '#93a8b3',
+            'text-faint': '#56636b',
           }
         }
       }
     }
   </script>
   <style>
+    :root {
+      --font-mono: "Maple Mono NF", "Maple Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --bg: #04070d;
+      --bg-elevated: #080d16;
+      --panel: rgba(10, 17, 27, 0.72);
+      --panel-border: rgba(63, 217, 255, 0.18);
+      --accent: #3fd9ff;
+      --accent-dim: #1c7d92;
+      --accent-glow: rgba(63, 217, 255, 0.35);
+      --text: #e6f1f5;
+      --text-dim: #93a8b3;
+      --text-faint: #56636b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--bg);
+      color-scheme: dark;
+      scroll-behavior: smooth;
+    }
+
     body {
-      background-color: #09090b;
-      color: #f4f4f5;
-      font-family: 'JetBrains Mono', monospace;
+      min-width: 320px;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
       -webkit-font-smoothing: antialiased;
+      line-height: 1.6;
     }
+
+    ::selection {
+      background: rgba(63, 217, 255, 0.25);
+      color: #3fd9ff;
+    }
+
+    /* Chromatic Aberration Text Effect */
+    .chromatic-text {
+      position: relative;
+      display: inline-block;
+      color: var(--text);
+      text-shadow:
+        0 0 2px rgba(255, 255, 255, 0.7),
+        0 0 10px rgba(63, 217, 255, 0.5),
+        0 0 22px rgba(63, 217, 255, 0.3);
+    }
+
+    .chromatic-text::before,
+    .chromatic-text::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .chromatic-text::before {
+      color: rgba(255, 0, 85, 0.75);
+      transform: translate(-1.2px, 0);
+      mix-blend-mode: screen;
+      clip-path: inset(0 0 48% 0);
+      text-shadow: 0 0 8px rgba(255, 0, 85, 0.6);
+    }
+
+    .chromatic-text::after {
+      color: rgba(63, 217, 255, 0.85);
+      transform: translate(1.2px, 0);
+      mix-blend-mode: screen;
+      clip-path: inset(48% 0 0 0);
+      text-shadow: 0 0 8px rgba(63, 217, 255, 0.6);
+    }
+
+    /* Floating Pill Navigation */
+    .site-nav-wrap {
+      position: sticky;
+      top: 1rem;
+      z-index: 50;
+      width: min(100% - 2rem, 76rem);
+      margin-inline: auto;
+    }
+
+    .site-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      min-height: 3.5rem;
+      padding: 0.625rem 1.25rem;
+      border: 1px solid var(--panel-border);
+      border-radius: 999px;
+      background: var(--panel);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(16px) saturate(140%);
+      -webkit-backdrop-filter: blur(16px) saturate(140%);
+    }
+
+    /* Glass Panels */
+    .glass-panel {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--panel-border);
+      border-radius: 1rem;
+      background: var(--panel);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: border-color 200ms ease, box-shadow 200ms ease;
+    }
+
+    .glass-panel:hover {
+      border-color: rgba(63, 217, 255, 0.3);
+    }
+
+    /* Buttons */
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      min-height: 2.5rem;
+      padding: 0.5rem 1.25rem;
+      border-radius: 999px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      text-decoration: none;
+      transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease, background 150ms ease, color 150ms ease;
+      cursor: pointer;
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+    }
+
+    .button:active {
+      transform: translateY(0);
+    }
+
+    .button-primary {
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #020509;
+      box-shadow: 0 0 24px var(--accent-glow);
+    }
+
+    .button-primary:hover {
+      background: #62e1ff;
+      box-shadow: 0 0 32px rgba(63, 217, 255, 0.55);
+    }
+
+    .button-secondary {
+      border: 1px solid var(--panel-border);
+      background: rgba(10, 17, 27, 0.6);
+      color: var(--text);
+      backdrop-filter: blur(12px);
+    }
+
+    .button-secondary:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 18px var(--accent-glow);
+    }
+
+    /* Status Badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-height: 1.75rem;
+      padding: 0.25rem 0.75rem;
+      border: 1px solid rgba(63, 217, 255, 0.28);
+      border-radius: 999px;
+      background: rgba(63, 217, 255, 0.06);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      line-height: 1.4;
+      font-family: var(--font-mono);
+      letter-spacing: 0.04em;
+    }
+
+    .status-dot-active {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+      animation: pulse-dot 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.45;
+        transform: scale(0.85);
+      }
+    }
+
+    /* Viewfinder QR Stage Frame */
+    .viewfinder-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      max-width: 380px;
+      max-height: 380px;
+      margin: 0 auto;
+      border-radius: 1rem;
+      background-color: var(--bg-elevated);
+      background-image:
+        linear-gradient(rgba(63, 217, 255, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(63, 217, 255, 0.07) 1px, transparent 1px);
+      background-size: 20px 20px;
+      border: 1px solid rgba(63, 217, 255, 0.25);
+      box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.7), 0 0 30px rgba(63, 217, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem;
+      overflow: hidden;
+    }
+
+    /* Viewfinder Corner HUD Reticles */
+    .hud-reticle {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-color: var(--accent);
+      pointer-events: none;
+      opacity: 0.8;
+    }
+    .hud-tl { top: 8px; left: 8px; border-top: 2px solid var(--accent); border-left: 2px solid var(--accent); }
+    .hud-tr { top: 8px; right: 8px; border-top: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+    .hud-bl { bottom: 8px; left: 8px; border-bottom: 2px solid var(--accent); border-left: 2px solid var(--accent); }
+    .hud-br { bottom: 8px; right: 8px; border-bottom: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+
+    /* Guaranteed SVG scaling: fills frame without overflowing */
+    .qr-svg-wrapper {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qr-svg-wrapper svg {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: 100% !important;
+      max-height: 100% !important;
+      object-fit: contain;
+      display: block !important;
+      filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.6));
+    }
+
+    /* Custom Form Inputs */
+    input[type="text"],
+    input[type="password"],
+    input[type="url"],
+    textarea,
+    select {
+      background: rgba(8, 13, 22, 0.8);
+      border: 1px solid var(--panel-border);
+      border-radius: 0.5rem;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.875rem;
+      padding: 0.625rem 0.875rem;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus,
+    input[type="url"]:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+
     input[type="range"] {
-      accent-color: #a855f7;
+      accent-color: var(--accent);
     }
-    /* Custom scrollbar */
+
+    /* Scrollbars */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
     }
     ::-webkit-scrollbar-track {
-      background: #09090b;
+      background: var(--bg);
     }
     ::-webkit-scrollbar-thumb {
-      background: #27272a;
+      background: rgba(63, 217, 255, 0.2);
       border-radius: 3px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: #3f3f46;
+      background: var(--accent);
     }
   </style>
 </head>
-<body class="min-h-screen bg-bg text-ink selection:bg-purple/30 selection:text-purple">
+<body class="min-h-screen bg-[#04070d] text-[#e6f1f5]">
   <div id="app"></div>
 </body>
 </html>

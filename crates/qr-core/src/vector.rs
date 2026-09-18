@@ -65,7 +65,7 @@ pub struct VectorRenderConfig {
     pub code_color: String,
     pub gradient: Option<GradientConfig>,
     pub eye_color: Option<String>,
-    pub bg_color: Option<String>, // None = transparent
+    pub bg_color: Option<String>,
     pub logo: Option<LogoConfig>,
     pub cta: Option<CtaBannerConfig>,
     pub alt_text: Option<String>,
@@ -76,13 +76,13 @@ impl Default for VectorRenderConfig {
         Self {
             scale: 20.0,
             margin_modules: 2,
-            module_shape: ModuleShape::Smooth,
+            module_shape: ModuleShape::Classy,
             eye_frame_shape: EyeFrameShape::Rounded,
             eye_dot_shape: EyeDotShape::Circle,
-            code_color: "#18181B".to_string(),
+            code_color: "#3fd9ff".to_string(),
             gradient: None,
             eye_color: None,
-            bg_color: Some("#FFFFFF".to_string()),
+            bg_color: Some("#04070d".to_string()),
             logo: None,
             cta: None,
             alt_text: Some("QR Code".to_string()),
@@ -255,23 +255,68 @@ impl VectorRenderer {
                             r#"<circle cx="{cx}" cy="{cy}" r="{r:.2}" fill="{body_fill}"/>"#
                         ));
                     }
-                    ModuleShape::Smooth | ModuleShape::Classy => {
+                    ModuleShape::Smooth => {
                         let top = y > 0 && is_active(x, y - 1);
                         let right = x + 1 < size && is_active(x + 1, y);
                         let bottom = y + 1 < size && is_active(x, y + 1);
                         let left = x > 0 && is_active(x - 1, y);
                         let r = scale * 0.45;
-                        let is_isolated = !top && !right && !bottom && !left;
 
-                        let (r_tl, r_tr, r_br, r_bl) = if config.module_shape == ModuleShape::Classy && is_isolated {
-                            (r, 0.0, r, 0.0)
+                        let r_tl = if !top && !left { r } else { 0.0 };
+                        let r_tr = if !top && !right { r } else { 0.0 };
+                        let r_br = if !bottom && !right { r } else { 0.0 };
+                        let r_bl = if !bottom && !left { r } else { 0.0 };
+
+                        if r_tl == 0.0 && r_tr == 0.0 && r_br == 0.0 && r_bl == 0.0 {
+                            elements.push_str(&format!(
+                                r#"<rect x="{px}" y="{py}" width="{scale}" height="{scale}" fill="{body_fill}"/>"#
+                            ));
                         } else {
-                            (
-                                if !top && !left { r } else { 0.0 },
-                                if !top && !right { r } else { 0.0 },
-                                if !bottom && !right { r } else { 0.0 },
-                                if !bottom && !left { r } else { 0.0 },
-                            )
+                            let mut d = format!("M {x} {y}", x = px + r_tl, y = py);
+                            d.push_str(&format!(" h {}", scale - r_tl - r_tr));
+                            if r_tr > 0.0 {
+                                d.push_str(&format!(" a {r_tr} {r_tr} 0 0 1 {r_tr} {r_tr}"));
+                            }
+                            d.push_str(&format!(" v {}", scale - r_tr - r_br));
+                            if r_br > 0.0 {
+                                d.push_str(&format!(" a {r_br} {r_br} 0 0 1 -{r_br} {r_br}"));
+                            }
+                            d.push_str(&format!(" h -{}", scale - r_br - r_bl));
+                            if r_bl > 0.0 {
+                                d.push_str(&format!(" a {r_bl} {r_bl} 0 0 1 -{r_bl} -{r_bl}"));
+                            }
+                            d.push_str(&format!(" v -{}", scale - r_bl - r_tl));
+                            if r_tl > 0.0 {
+                                d.push_str(&format!(" a {r_tl} {r_tl} 0 0 1 {r_tl} -{r_tl}"));
+                            }
+                            d.push_str(" Z");
+                            elements.push_str(&format!(r#"<path d="{d}" fill="{body_fill}"/>"#));
+                        }
+                    }
+                    ModuleShape::Classy => {
+                        // Matching ente-toys/qr and qr-code-styling _drawClassy
+                        let top = y > 0 && is_active(x, y - 1);
+                        let right = x + 1 < size && is_active(x + 1, y);
+                        let bottom = y + 1 < size && is_active(x, y + 1);
+                        let left = x > 0 && is_active(x - 1, y);
+                        let r = scale / 2.0;
+
+                        let (r_tl, r_tr, r_br, r_bl) = if left || right || top || bottom {
+                            if left || top {
+                                if right || bottom {
+                                    // Chain interior
+                                    (0.0, 0.0, 0.0, 0.0)
+                                } else {
+                                    // Terminating corner
+                                    (0.0, 0.0, r, 0.0)
+                                }
+                            } else {
+                                // Starting corner
+                                (r, 0.0, 0.0, 0.0)
+                            }
+                        } else {
+                            // Isolated dot: opposite diagonal corners rounded (leaf shape)
+                            (r, 0.0, r, 0.0)
                         };
 
                         if r_tl == 0.0 && r_tr == 0.0 && r_br == 0.0 && r_bl == 0.0 {
@@ -279,14 +324,24 @@ impl VectorRenderer {
                                 r#"<rect x="{px}" y="{py}" width="{scale}" height="{scale}" fill="{body_fill}"/>"#
                             ));
                         } else {
-                            let d = format!(
-                                "M {px_tl} {py} h {w} a {r_tr} {r_tr} 0 0 1 {r_tr} {r_tr} v {h_r} a {r_br} {r_br} 0 0 1 -{r_br} {r_br} h -{w_b} a {r_bl} {r_bl} 0 0 1 -{r_bl} -{r_bl} v -{h_l} a {r_tl} {r_tl} 0 0 1 {r_tl} -{r_tl} Z",
-                                px_tl = px + r_tl,
-                                w = scale - r_tl - r_tr,
-                                h_r = scale - r_tr - r_br,
-                                w_b = scale - r_br - r_bl,
-                                h_l = scale - r_bl - r_tl,
-                            );
+                            let mut d = format!("M {x} {y}", x = px + r_tl, y = py);
+                            d.push_str(&format!(" h {}", scale - r_tl - r_tr));
+                            if r_tr > 0.0 {
+                                d.push_str(&format!(" a {r_tr} {r_tr} 0 0 1 {r_tr} {r_tr}"));
+                            }
+                            d.push_str(&format!(" v {}", scale - r_tr - r_br));
+                            if r_br > 0.0 {
+                                d.push_str(&format!(" a {r_br} {r_br} 0 0 1 -{r_br} {r_br}"));
+                            }
+                            d.push_str(&format!(" h -{}", scale - r_br - r_bl));
+                            if r_bl > 0.0 {
+                                d.push_str(&format!(" a {r_bl} {r_bl} 0 0 1 -{r_bl} -{r_bl}"));
+                            }
+                            d.push_str(&format!(" v -{}", scale - r_bl - r_tl));
+                            if r_tl > 0.0 {
+                                d.push_str(&format!(" a {r_tl} {r_tl} 0 0 1 {r_tl} -{r_tl}"));
+                            }
+                            d.push_str(" Z");
                             elements.push_str(&format!(r#"<path d="{d}" fill="{body_fill}"/>"#));
                         }
                     }
@@ -328,9 +383,9 @@ impl VectorRenderer {
                         w_out = 7.0 * scale - 2.0 * ro
                     );
                     let inner_d = format!(
-                        "M {px_ri} {py_in} h {w_in} a {ri} {ri} 0 0 1 {ri} {ri} v {w_in} a {ri} {ri} 0 0 1 -{ri} {ri} h -{w_in} a {ri} {ri} 0 0 1 -{ri} -{ri} v -{w_in} a {ri} {ri} 0 0 1 {ri} -{ri} Z",
+                        "M {px_ri} {py_ri} h {w_in} a {ri} {ri} 0 0 1 {ri} {ri} v {w_in} a {ri} {ri} 0 0 1 -{ri} {ri} h -{w_in} a {ri} {ri} 0 0 1 -{ri} -{ri} v -{w_in} a {ri} {ri} 0 0 1 {ri} -{ri} Z",
                         px_ri = px + scale + ri,
-                        py_in = py + scale,
+                        py_ri = py + scale,
                         w_in = 5.0 * scale - 2.0 * ri
                     );
                     elements.push_str(&format!(
@@ -339,11 +394,11 @@ impl VectorRenderer {
                 }
                 EyeFrameShape::Square => {
                     let d = format!(
-                        "M {px} {py} h {s7} v {s7} h -{s7} Z M {px_in} {py_in} v {s5} h {s5} v -{s5} Z",
-                        s7 = 7.0 * scale,
-                        s5 = 5.0 * scale,
-                        px_in = px + scale,
-                        py_in = py + scale,
+                        "M {px} {py} h {outer} v {outer} h -{outer} Z M {inner_x} {inner_y} v {inner} h {inner} v -{inner} Z",
+                        outer = 7.0 * scale,
+                        inner_x = px + scale,
+                        inner_y = py + scale,
+                        inner = 5.0 * scale
                     );
                     elements.push_str(&format!(
                         r#"<path fill-rule="evenodd" d="{d}" fill="{eye_fill}"/>"#
@@ -352,30 +407,28 @@ impl VectorRenderer {
             }
 
             // Inner eye dot
+            let dot_x = px + 2.0 * scale;
+            let dot_y = py + 2.0 * scale;
+            let dot_size = 3.0 * scale;
+
             match config.eye_dot_shape {
                 EyeDotShape::Circle => {
-                    let cx = px + 3.5 * scale;
-                    let cy = py + 3.5 * scale;
-                    let r = 1.5 * scale;
+                    let cx = dot_x + dot_size / 2.0;
+                    let cy = dot_y + dot_size / 2.0;
+                    let r = dot_size / 2.0;
                     elements.push_str(&format!(
                         r#"<circle cx="{cx}" cy="{cy}" r="{r}" fill="{eye_fill}"/>"#
                     ));
                 }
                 EyeDotShape::Rounded => {
-                    let dpx = px + 2.0 * scale;
-                    let dpy = py + 2.0 * scale;
-                    let ds = 3.0 * scale;
-                    let dr = scale;
+                    let r = scale * 0.9;
                     elements.push_str(&format!(
-                        r#"<rect x="{dpx}" y="{dpy}" width="{ds}" height="{ds}" rx="{dr}" ry="{dr}" fill="{eye_fill}"/>"#
+                        r#"<rect x="{dot_x}" y="{dot_y}" width="{dot_size}" height="{dot_size}" rx="{r}" ry="{r}" fill="{eye_fill}"/>"#
                     ));
                 }
                 EyeDotShape::Square => {
-                    let dpx = px + 2.0 * scale;
-                    let dpy = py + 2.0 * scale;
-                    let ds = 3.0 * scale;
                     elements.push_str(&format!(
-                        r#"<rect x="{dpx}" y="{dpy}" width="{ds}" height="{ds}" fill="{eye_fill}"/>"#
+                        r#"<rect x="{dot_x}" y="{dot_y}" width="{dot_size}" height="{dot_size}" fill="{eye_fill}"/>"#
                     ));
                 }
             }
@@ -383,7 +436,7 @@ impl VectorRenderer {
 
         // 4. Center Logo
         if let Some((logo, pixel_size, cx, cy, radius, x, y, pad)) = &logo_info {
-            let bg_color = config.bg_color.as_deref().unwrap_or("#FFFFFF");
+            let bg_color = config.bg_color.as_deref().unwrap_or("#04070d");
             match logo.shape {
                 LogoMaskShape::Circle => {
                     elements.push_str(&format!(r#"<circle cx="{cx}" cy="{cy}" r="{radius}" fill="{bg_color}"/>"#));
@@ -412,10 +465,10 @@ impl VectorRenderer {
         // 5. CTA Text Banner
         if let Some(text) = cta_text {
             let text_y = qr_width + (cta_height / 2.0);
-            let text_color = config.cta.as_ref().map(|c| c.color.as_str()).unwrap_or("#18181B");
+            let text_color = config.cta.as_ref().map(|c| c.color.as_str()).unwrap_or("#3fd9ff");
             let escaped = html_escape(&text);
             elements.push_str(&format!(
-                r#"<text x="{}" y="{}" fill="{}" font-family="'JetBrains Mono', monospace" font-weight="bold" font-size="{}" text-anchor="middle" dominant-baseline="central" letter-spacing="1">{}</text>"#,
+                r#"<text x="{}" y="{}" fill="{}" font-family="'Maple Mono NF', 'Maple Mono', 'JetBrains Mono', monospace" font-weight="bold" font-size="{}" text-anchor="middle" dominant-baseline="central" letter-spacing="1.5">{}</text>"#,
                 qr_width / 2.0,
                 text_y,
                 text_color,
@@ -438,7 +491,7 @@ impl VectorRenderer {
         };
 
         format!(
-            r#"<svg xmlns="http://www.w3.org/2000/svg" width="{qr_width}" height="{full_height}" viewBox="0 0 {qr_width} {full_height}">{title_desc}{defs_tag}{elements}</svg>"#
+            r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {qr_width} {full_height}" width="{qr_width}" height="{full_height}" style="width:100%;height:auto;max-width:100%;display:block;">{title_desc}{defs_tag}{elements}</svg>"#
         )
     }
 }
@@ -470,6 +523,15 @@ mod tests {
         let svg = VectorRenderer::render_svg(&matrix, &config);
         assert!(svg.starts_with("<svg"));
         assert!(svg.ends_with("</svg>"));
-        assert!(svg.contains("fill=\"#18181B\""));
+        assert!(svg.contains("fill=\"#3fd9ff\""));
+    }
+
+    #[test]
+    fn test_classy_shape_generation() {
+        let matrix = QrMatrix::new("TEST CLASSY", EccLevel::M, false).unwrap();
+        let mut config = VectorRenderConfig::default();
+        config.module_shape = ModuleShape::Classy;
+        let svg = VectorRenderer::render_svg(&matrix, &config);
+        assert!(svg.contains("<path d=\"M "));
     }
 }

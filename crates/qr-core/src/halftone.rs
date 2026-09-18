@@ -38,7 +38,7 @@ impl Default for HalftoneConfig {
             dither: DitherAlgorithm::Clustered,
             strength_bias: 50,
             cell_core_size: 3,
-            dark_color: "#1A237E".to_string(),
+            dark_color: "#080d16".to_string(),
             clahe: true,
             preserve_structure: true,
             crisp_cores: false,
@@ -157,7 +157,7 @@ impl HalftoneEngine {
 
         // Generate output bitmap image
         let mut out_image = RgbaImage::new(output_size as u32, output_size as u32);
-        let dark_rgba = parse_hex_color(&config.dark_color).unwrap_or(Rgba([24, 24, 27, 255]));
+        let dark_rgba = parse_hex_color(&config.dark_color).unwrap_or(Rgba([8, 13, 22, 255]));
         let white_rgba = Rgba([255, 255, 255, 255]);
 
         match config.mode {
@@ -251,7 +251,7 @@ impl HalftoneEngine {
         // Generate vector run-length SVG string
         let svg_path = Self::generate_svg_path(&pixels, output_size, output_size);
         let svg = format!(
-            r#"<svg xmlns="http://www.w3.org/2000/svg" width="{output_size}" height="{output_size}" viewBox="0 0 {output_size} {output_size}" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="white"/><path d="{svg_path}" fill="black"/></svg>"#
+            r#"<svg xmlns="http://www.w3.org/2000/svg" width="{output_size}" height="{output_size}" viewBox="0 0 {output_size} {output_size}" shape-rendering="crispEdges" style="width:100%;height:auto;max-width:100%;display:block;"><rect width="100%" height="100%" fill="white"/><path d="{svg_path}" fill="black"/></svg>"#
         );
 
         (out_image, svg)
@@ -364,7 +364,7 @@ impl HalftoneEngine {
     pub fn detect_palette(image: &DynamicImage) -> Vec<String> {
         let (w, h) = image.dimensions();
         if w == 0 || h == 0 {
-            return vec!["#18181B".to_string()];
+            return vec!["#080d16".to_string()];
         }
 
         let sz = 64.min(w).min(h);
@@ -387,7 +387,7 @@ impl HalftoneEngine {
         let main_b = (((b_sum / count) as f64) * 0.45).round() as u8;
         let main_hex = format!("#{main_r:02X}{main_g:02X}{main_b:02X}");
 
-        vec![main_hex, "#18181B".into(), "#1E3A8A".into(), "#065F46".into(), "#701A75".into()]
+        vec![main_hex, "#080d16".into(), "#1E3A8A".into(), "#065F46".into(), "#3fd9ff".into()]
     }
 }
 
