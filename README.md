@@ -1,26 +1,20 @@
 # QR Code Studio (`qr.den1zz.dev`)
 
-> Pure-Rust QR engine unifying advanced vector custom styling, binary image halftoning, and built-in scan verification.
+> Pure-Rust, client-side QR studio with Ente classy modules, URL query tracking sanitizer, and high-resolution exports. Runs entirely locally in WebAssembly with zero network tracking.
 
 ## Highlights
 
-- **Unified Suite**: Integrates both vector graphic design and photo halftoning into a single fullstack Rust codebase.
-- **Client-Side Reactive Wasm**: Interactive preview powered by Leptos 0.7 compiled to WebAssembly. Zero latency, instant feedback.
-- **Full Backend API**: Axum-based server with endpoints for vector generation, photo halftoning, and scan verification.
-- **Built-in `rqrr` Verifier**: Every generated QR code is verified for machine-readability before export, with contrast advisory metrics.
-- **Privacy First**: Strips tracking parameters (`utm_*`, `fbclid`, `gclid`, etc.) before encoding, shrinking matrix density.
+- **Pure Rust & WebAssembly**: Fast, reactive client-side engine powered by Leptos 0.7 CSR and compiled with Trunk. Zero latency, instant preview updates.
+- **Privacy First & Query Cleaner**: Automatic URL query inspection and stripping of marketing tracking parameters (`utm_*`, `fbclid`, `gclid`, `ref`, etc.) to keep matrix density low and protect recipient privacy.
 - **Vector Styling**:
-  - Module shapes: Square, Smooth, Dots, Classy.
-  - Eye shapes: Square, Rounded, Circle frames and inner dots.
-  - Linear and Radial gradients.
-  - Center logo punchout with automatic module collision avoidance.
-  - Call-to-action text badges (SCAN ME, WIFI, MENU, custom).
-- **Photo Halftoning**:
-  - Color, Sampled, and B/W dither modes.
-  - Dithering kernels: Clustered dot, Floyd-Steinberg, Bayer 4×4, Bayer 8×8.
-  - CLAHE (Contrast Limited Adaptive Histogram Equalization).
-  - Protected structural cell masks (finders, timing tracks, alignment markers).
-- **High-Resolution Exports**: SVG vector downloads, PNG exports up to 4096×4096, and PNG `tEXt` alt-text accessibility metadata.
+  - Module shapes: Ente Classy, Smooth, Dots, Square.
+  - Eye frame shapes: Rounded, Circle, Square.
+  - Eye dot shapes: Circle, Rounded, Square.
+  - Granular color controls: Module color, Eye Frame color, Eye Dot color, and background color or transparent mode.
+  - Optional center logo punchout with automatic error correction upgrade.
+- **Scannability Assurance**: Live WCAG contrast ratio calculations for module, eye frame, and eye dot against the background.
+- **High-Resolution Exports**: Download pure SVG, copy raw SVG to clipboard, or export PNG at 512px, 1024px, and 2048px resolutions.
+- **Zero Network Calls**: All generation happens directly in the browser's WebAssembly sandbox.
 
 ---
 
@@ -29,10 +23,12 @@
 ```
 .
 ├── crates
-│   ├── qr-core      # Shared library: QR matrix, vector renderer, halftoner, verifier, PNG exporter
-│   ├── qr-server    # Axum HTTP service and static file server
-│   └── qr-frontend  # Leptos CSR WebAssembly application built with Trunk
+│   ├── qr-core      # Shared library: QR matrix generation, vector SVG renderer, payload sanitizer, contrast verifier
+│   ├── qr-frontend  # Leptos CSR WebAssembly application built with Trunk
+│   └── qr-server    # Optional Axum HTTP service for serving static assets and optional API endpoints
 ├── Cargo.toml       # Cargo workspace configuration
+├── vercel.json      # Vercel deployment configuration
+├── vercel-build.sh  # Automated Vercel build script
 └── README.md
 ```
 
@@ -61,23 +57,28 @@
    ```
    The application will be live at `http://localhost:3000`.
 
-3. **Run Tests**:
+3. **Or run with Trunk serve directly**:
+   ```bash
+   cd crates/qr-frontend
+   trunk serve --port 3000
+   ```
+
+4. **Run Tests**:
    ```bash
    cargo test --workspace
    ```
 
 ---
 
-## API Reference
+## Deploy to Vercel
 
-### `POST /api/generate/vector`
-Generates an SVG string for a given payload and vector styling configuration.
+The project is configured for one-click static deployment on Vercel:
 
-### `POST /api/generate/halftone`
-Processes an uploaded image with error-corrected halftoning, returning an SVG, base64 PNG, detected palette, and `rqrr` verification status.
-
-### `POST /api/verify`
-Scans a rendered QR code image, reports scan status (Verified, Uncertain, Unscannable), decoded content, and contrast ratio.
+1. Import the repository in Vercel.
+2. The root `vercel.json` and `vercel-build.sh` will automatically configure:
+   - **Build Command**: `./vercel-build.sh`
+   - **Output Directory**: `crates/qr-frontend/dist`
+3. All assets are compiled to static HTML/Wasm and served via Vercel Edge CDN with caching and security headers.
 
 ---
 

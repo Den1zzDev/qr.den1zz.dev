@@ -1914,7 +1914,6 @@ dependencies = [
  "base64",
  "console_error_panic_hook",
  "gloo-timers",
- "image",
  "js-sys",
  "leptos",
  "qr-core",

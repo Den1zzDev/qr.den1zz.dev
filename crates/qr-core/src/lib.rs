@@ -1,12 +1,10 @@
 pub mod export;
-pub mod halftone;
 pub mod matrix;
 pub mod payload;
 pub mod vector;
 pub mod verifier;
 
 pub use export::PngExporter;
-pub use halftone::{DitherAlgorithm, HalftoneColorMode, HalftoneConfig, HalftoneEngine};
 pub use matrix::{EccLevel, QrMatrix};
 pub use payload::{Payload, SanitizedPayload, WifiAuth};
 pub use vector::{
