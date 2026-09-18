@@ -1,0 +1,45 @@
+[package]
+name = "qr-frontend"
+version = "0.1.0"
+edition = "2021"
+authors = ["Den1zzDev"]
+license = "MIT"
+repository = "https://github.com/Den1zzDev/qr.den1zz.dev"
+homepage = "https://qr.den1zz.dev"
+
+[dependencies]
+qr-core = { path = "../qr-core" }
+leptos = { version = "0.7", features = ["csr"] }
+wasm-bindgen = "0.2"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = [
+    "HtmlInputElement",
+    "HtmlTextAreaElement",
+    "HtmlSelectElement",
+    "HtmlCanvasElement",
+    "HtmlImageElement",
+    "CanvasRenderingContext2d",
+    "FileReader",
+    "ProgressEvent",
+    "Clipboard",
+    "Navigator",
+    "Window",
+    "Document",
+    "Element",
+    "File",
+    "FileList",
+    "Blob",
+    "BlobPropertyBag",
+    "Url",
+    "HtmlAnchorElement",
+    "CustomEvent",
+    "ImageData",
+    "DragEvent",
+    "DataTransfer",
+] }
+wasm-bindgen-futures = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+console_error_panic_hook = "0.1"
+gloo-timers = { version = "0.3", features = ["futures"] }
+base64 = "0.22"

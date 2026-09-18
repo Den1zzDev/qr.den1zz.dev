@@ -1,0 +1,13 @@
+target/
+dist/
+crates/qr-frontend/dist/
+**/*.rs.bk
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+*.log
+.env
+.env.*
+!.env.example

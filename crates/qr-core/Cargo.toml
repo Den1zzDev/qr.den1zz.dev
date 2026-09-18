@@ -1,0 +1,22 @@
+[package]
+name = "qr-core"
+version = "0.1.0"
+edition = "2021"
+authors = ["Den1zzDev"]
+description = "Pure Rust core QR matrix generator, image halftoner, vector renderer, and scan verifier"
+license = "MIT"
+repository = "https://github.com/Den1zzDev/qr.den1zz.dev"
+homepage = "https://qr.den1zz.dev"
+
+[dependencies]
+qrcode = { version = "0.14.1", default-features = false }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+rqrr = "0.11"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+url = "2.5"
+crc32fast = "1.4"
+base64 = "0.22"
+
+[dev-dependencies]
+image = { version = "0.25", features = ["png", "jpeg"] }
