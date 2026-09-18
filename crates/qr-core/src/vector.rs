@@ -65,6 +65,8 @@ pub struct VectorRenderConfig {
     pub code_color: String,
     pub gradient: Option<GradientConfig>,
     pub eye_color: Option<String>,
+    #[serde(default)]
+    pub eye_dot_color: Option<String>,
     pub bg_color: Option<String>,
     pub logo: Option<LogoConfig>,
     pub cta: Option<CtaBannerConfig>,
@@ -79,10 +81,11 @@ impl Default for VectorRenderConfig {
             module_shape: ModuleShape::Classy,
             eye_frame_shape: EyeFrameShape::Rounded,
             eye_dot_shape: EyeDotShape::Circle,
-            code_color: "#3fd9ff".to_string(),
+            code_color: "#ffffff".to_string(),
             gradient: None,
-            eye_color: None,
-            bg_color: Some("#04070d".to_string()),
+            eye_color: Some("#ffffff".to_string()),
+            eye_dot_color: Some("#00f0ff".to_string()),
+            bg_color: Some("#000000".to_string()),
             logo: None,
             cta: None,
             alt_text: Some("QR Code".to_string()),
@@ -146,6 +149,7 @@ impl VectorRenderer {
         };
 
         let eye_fill = config.eye_color.clone().unwrap_or_else(|| body_fill.clone());
+        let eye_dot_fill = config.eye_dot_color.clone().unwrap_or_else(|| eye_fill.clone());
 
         // Logo cutout geometry
         let logo_info = config.logo.as_ref().map(|l| {
@@ -417,18 +421,18 @@ impl VectorRenderer {
                     let cy = dot_y + dot_size / 2.0;
                     let r = dot_size / 2.0;
                     elements.push_str(&format!(
-                        r#"<circle cx="{cx}" cy="{cy}" r="{r}" fill="{eye_fill}"/>"#
+                        r#"<circle cx="{cx}" cy="{cy}" r="{r}" fill="{eye_dot_fill}"/>"#
                     ));
                 }
                 EyeDotShape::Rounded => {
                     let r = scale * 0.9;
                     elements.push_str(&format!(
-                        r#"<rect x="{dot_x}" y="{dot_y}" width="{dot_size}" height="{dot_size}" rx="{r}" ry="{r}" fill="{eye_fill}"/>"#
+                        r#"<rect x="{dot_x}" y="{dot_y}" width="{dot_size}" height="{dot_size}" rx="{r}" ry="{r}" fill="{eye_dot_fill}"/>"#
                     ));
                 }
                 EyeDotShape::Square => {
                     elements.push_str(&format!(
-                        r#"<rect x="{dot_x}" y="{dot_y}" width="{dot_size}" height="{dot_size}" fill="{eye_fill}"/>"#
+                        r#"<rect x="{dot_x}" y="{dot_y}" width="{dot_size}" height="{dot_size}" fill="{eye_dot_fill}"/>"#
                     ));
                 }
             }
@@ -523,7 +527,8 @@ mod tests {
         let svg = VectorRenderer::render_svg(&matrix, &config);
         assert!(svg.starts_with("<svg"));
         assert!(svg.ends_with("</svg>"));
-        assert!(svg.contains("fill=\"#3fd9ff\""));
+        assert!(svg.contains("fill=\"#ffffff\""));
+        assert!(svg.contains("fill=\"#00f0ff\""));
     }
 
     #[test]

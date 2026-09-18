@@ -20,9 +20,10 @@ pub fn App() -> impl IntoView {
     let (module_shape, set_module_shape) = signal(ModuleShape::Classy);
     let (eye_frame_shape, set_eye_frame_shape) = signal(EyeFrameShape::Rounded);
 
-    // Color Pickers for Module and Eye
-    let (module_color, set_module_color) = signal("#00f0ff".to_string());
+    // Sensible Default Colors: AMOLED Black background, White modules & eye frames, Cyan eye dots
+    let (module_color, set_module_color) = signal("#ffffff".to_string());
     let (eye_color, set_eye_color) = signal("#ffffff".to_string());
+    let (dot_color, set_dot_color) = signal("#00f0ff".to_string());
     let (is_transparent_bg, set_is_transparent_bg) = signal(false);
     let (bg_color, set_bg_color) = signal("#000000".to_string());
 
@@ -81,6 +82,7 @@ pub fn App() -> impl IntoView {
             code_color: module_color.get(),
             gradient: None,
             eye_color: Some(eye_color.get()),
+            eye_dot_color: Some(dot_color.get()),
             bg_color: bg,
             logo,
             cta: None,
@@ -91,10 +93,11 @@ pub fn App() -> impl IntoView {
         Ok((matrix, svg))
     });
 
-    // Contrast calculation for both Module and Eye against Background
+    // Contrast calculation for Module, Eye Frame, and Eye Dot against Background
     let contrast_ratios = Memo::new(move |_| {
         let mod_c = module_color.get();
         let eye_c = eye_color.get();
+        let dot_c = dot_color.get();
         let bg = if is_transparent_bg.get() {
             "#FFFFFF"
         } else {
@@ -102,7 +105,8 @@ pub fn App() -> impl IntoView {
         };
         let r_mod = calculate_contrast_ratio(&mod_c, bg);
         let r_eye = calculate_contrast_ratio(&eye_c, bg);
-        (r_mod, r_eye)
+        let r_dot = calculate_contrast_ratio(&dot_c, bg);
+        (r_mod, r_eye, r_dot)
     });
 
     // Temporary notification helper
@@ -191,47 +195,20 @@ pub fn App() -> impl IntoView {
         }
     };
 
-    let color_presets = ["#00f0ff", "#ffffff", "#38ef7d", "#ff3b80", "#f59e0b", "#a855f7"];
+    let color_presets = ["#ffffff", "#00f0ff", "#38ef7d", "#ff3b80", "#f59e0b", "#a855f7"];
 
     view! {
         <div class="min-h-screen bg-[#000000] text-[#ffffff] pb-16 selection:bg-[#00f0ff]/25 selection:text-[#00f0ff]">
-            // Clean Pill Navigation Bar
-            <div class="site-nav-wrap mb-8">
-                <nav class="site-nav">
-                    <a href="/" class="flex items-center gap-2 text-sm font-bold tracking-tight">
+            // Main Focused Container (KISS Philosophy, no unnecessary top navbar)
+            <main class="w-full max-w-[680px] mx-auto px-4 pt-8 sm:pt-12 space-y-5">
+                // Clean Header
+                <div class="text-center space-y-2">
+                    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight">
                         <span class="text-[#00f0ff]">"qr."</span>
                         <span class="text-[#ffffff]">"den1zz.dev"</span>
-                    </a>
-
-                    <div class="flex items-center gap-2">
-                        <div class="status-badge py-0.5 px-2.5 text-[11px]">
-                            <span class="status-dot-active"></span>
-                            <span>"ONLINE // RUST"</span>
-                        </div>
-                    </div>
-
-                    <a
-                        href="https://den1zz.dev"
-                        target="_blank"
-                        rel="noreferrer"
-                        class="button button-secondary text-xs py-1 px-3"
-                    >
-                        <span>"den1zz.dev"</span>
-                        <span class="text-[#00f0ff]">"↗"</span>
-                    </a>
-                </nav>
-            </div>
-
-            // Main Focused Container (KISS Philosophy)
-            <main class="w-full max-w-[680px] mx-auto px-4 space-y-5">
-                // Clean Minimal Hero
-                <div class="text-center space-y-1.5">
-                    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight brand-title">
-                        <span class="text-[#ffffff]">"QR Code "</span>
-                        <span class="text-[#00f0ff]">"Studio"</span>
                     </h1>
-                    <p class="text-xs text-[#a0a0a0] font-sans max-w-sm mx-auto">
-                        "Ente classy modules, dual color pickers, and URL query cleaner running in pure WebAssembly."
+                    <p class="text-xs sm:text-sm text-[#a0a0a0] max-w-md mx-auto leading-relaxed">
+                        "Local, client-side QR studio built in pure Rust & WebAssembly. URL query cleaner, Ente classy modules, and zero network calls."
                     </p>
                 </div>
 
@@ -240,7 +217,7 @@ pub fn App() -> impl IntoView {
                     <div class="relative flex items-center">
                         <input
                             type="text"
-                            class="w-full text-sm sm:text-base py-3 pl-4 pr-10 rounded-xl bg-[#050505] border border-[rgba(255,255,255,0.12)] focus:border-[#00f0ff] text-[#ffffff] placeholder:text-[#555555] outline-none transition-all shadow-inner font-mono"
+                            class="w-full text-sm sm:text-base py-3 pl-4 pr-10 rounded-xl bg-[#050505] border border-[rgba(255,255,255,0.12)] focus:border-[#00f0ff] text-[#ffffff] placeholder:text-[#555555] outline-none transition-all shadow-inner"
                             placeholder="Paste URL or enter text..."
                             prop:value=move || input_text.get()
                             on:input=move |ev| set_input_text.set(event_target_value(&ev))
@@ -248,7 +225,7 @@ pub fn App() -> impl IntoView {
                         {move || if !input_text.get().is_empty() {
                             view! {
                                 <button
-                                    class="absolute right-3 text-[#a0a0a0] hover:text-[#ffffff] p-1 text-sm font-mono"
+                                    class="absolute right-3 text-[#a0a0a0] hover:text-[#ffffff] p-1 text-sm"
                                     title="Clear input"
                                     on:click=move |_| set_input_text.set(String::new())
                                 >
@@ -260,7 +237,7 @@ pub fn App() -> impl IntoView {
                         }}
                     </div>
 
-                    // 2. Query Cleaner Prompt (ha.mr / tools.ralite.dev style)
+                    // 2. Query Cleaner Prompt (ha.mr & tools.ralite.dev style)
                     {move || query_info.get().map(|info| {
                         view! {
                             <div class="p-4 rounded-xl bg-[#080808] border border-[#00f0ff]/40 space-y-2.5 text-left transition-all">
@@ -269,16 +246,16 @@ pub fn App() -> impl IntoView {
                                         <span>"⚠️"</span>
                                         <span>"Consider removing parameters..."</span>
                                     </span>
-                                    <span class="text-[11px] font-mono text-[#a0a0a0]">
+                                    <span class="text-[11px] text-[#a0a0a0]">
                                         {format!("{} query parameters detected", info.total_param_count)}
                                     </span>
                                 </div>
-                                <p class="text-xs text-[#a0a0a0] leading-relaxed font-sans">
+                                <p class="text-xs text-[#a0a0a0] leading-relaxed">
                                     "Removing tracking tokens or transient URL query parameters shortens the link, generating a simpler and faster-to-scan QR code."
                                 </p>
                                 <div class="flex flex-wrap items-center gap-2 pt-1">
                                     <button
-                                        class="button button-primary text-xs py-1 px-3.5"
+                                        class="button button-primary text-xs py-1.5 px-3.5"
                                         on:click=move |_| {
                                             let cur = input_text.get();
                                             let cleaned = strip_all_query(&cur);
@@ -293,7 +270,7 @@ pub fn App() -> impl IntoView {
                                     {if info.tracking_param_count > 0 {
                                         view! {
                                             <button
-                                                class="button button-secondary text-xs py-1 px-3.5"
+                                                class="button button-secondary text-xs py-1.5 px-3.5"
                                                 on:click=move |_| {
                                                     let cur = input_text.get();
                                                     let (cleaned, count) = strip_tracking_query(&cur);
@@ -323,15 +300,16 @@ pub fn App() -> impl IntoView {
 
                     {move || match qr_result_memo.get() {
                         Ok((matrix, svg)) => {
-                            let (mod_ratio, eye_ratio) = contrast_ratios.get();
+                            let (mod_ratio, eye_ratio, dot_ratio) = contrast_ratios.get();
                             let is_mod_ok = mod_ratio >= 3.0;
                             let is_eye_ok = eye_ratio >= 3.0;
-                            let all_ok = is_mod_ok && is_eye_ok;
+                            let is_dot_ok = dot_ratio >= 3.0;
+                            let all_ok = is_mod_ok && is_eye_ok && is_dot_ok;
 
                             view! {
                                 <div class="w-full flex flex-col items-center justify-center space-y-4">
                                     // Scannability status pill
-                                    <div class="flex items-center gap-2 text-xs font-mono px-3 py-1 rounded-full bg-[#050505] border border-[rgba(255,255,255,0.12)]">
+                                    <div class="flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-[#050505] border border-[rgba(255,255,255,0.12)]">
                                         <span class=if all_ok {
                                             "w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"
                                         } else {
@@ -341,9 +319,11 @@ pub fn App() -> impl IntoView {
                                             {if all_ok { "Ready to Scan" } else { "Low Contrast" }}
                                         </span>
                                         <span class="text-[#555555]">"•"</span>
-                                        <span class="text-[#00f0ff]" title="Module Contrast">{format!("M:{mod_ratio:.1}:1")}</span>
+                                        <span class="text-[#ffffff]" title="Module Contrast">{format!("M:{mod_ratio:.1}:1")}</span>
                                         <span class="text-[#555555]">"•"</span>
-                                        <span class="text-[#ffffff]" title="Eye Contrast">{format!("E:{eye_ratio:.1}:1")}</span>
+                                        <span class="text-[#ffffff]" title="Eye Frame Contrast">{format!("E:{eye_ratio:.1}:1")}</span>
+                                        <span class="text-[#555555]">"•"</span>
+                                        <span class="text-[#00f0ff]" title="Eye Dot Contrast">{format!("D:{dot_ratio:.1}:1")}</span>
                                         <span class="text-[#555555]">"•"</span>
                                         <span class="text-[#a0a0a0]">{format!("v{} ({}×{})", matrix.version, matrix.size, matrix.size)}</span>
                                     </div>
@@ -363,14 +343,14 @@ pub fn App() -> impl IntoView {
                             }.into_any()
                         }
                         Err(e) => view! {
-                            <div class="text-rose-400 text-xs font-mono py-8">{format!("Error: {e}")}</div>
+                            <div class="text-rose-400 text-xs py-8">{format!("Error: {e}")}</div>
                         }.into_any()
                     }}
 
                     // Toast Notification
                     {move || notification_msg.get().map(|msg| {
                         view! {
-                            <div class="absolute bottom-4 px-4 py-1.5 rounded-full bg-[#050505] border border-[#00f0ff] text-[#00f0ff] text-xs font-mono font-bold shadow-[0_0_15px_rgba(0,240,255,0.35)]">
+                            <div class="absolute bottom-4 px-4 py-1.5 rounded-full bg-[#050505] border border-[#00f0ff] text-[#00f0ff] text-xs font-bold shadow-[0_0_15px_rgba(0,240,255,0.35)]">
                                 {msg}
                             </div>
                         }
@@ -445,17 +425,17 @@ pub fn App() -> impl IntoView {
                     </div>
                 </div>
 
-                // 4. Dual Color Pickers: Module Color & Eye Color
+                // 4. Color Pickers: Module Color, Eye Frame Color, and Eye Dot Color
                 <div class="glass-panel p-4 sm:p-5 space-y-4">
                     <div class="text-[11px] uppercase font-semibold text-[#a0a0a0] tracking-wider pb-1 border-b border-[rgba(255,255,255,0.08)]">
                         "Colors & Palette"
                     </div>
 
-                    // Module Color Picker
+                    // 4a. Module Color Picker
                     <div class="space-y-2">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-semibold text-[#ffffff] flex items-center gap-1.5">
-                                <span class="w-2.5 h-2.5 rounded-full" style=move || format!("background-color: {}", module_color.get())></span>
+                                <span class="w-2.5 h-2.5 rounded-full border border-white/20" style=move || format!("background-color: {}", module_color.get())></span>
                                 <span>"Module Color (Data Matrix)"</span>
                             </span>
                             <div class="flex items-center gap-2">
@@ -467,14 +447,13 @@ pub fn App() -> impl IntoView {
                                 />
                                 <input
                                     type="text"
-                                    class="w-24 text-xs font-mono uppercase bg-[#050505] border border-[rgba(255,255,255,0.12)] rounded px-2 py-1 text-center"
+                                    class="w-24 text-xs uppercase bg-[#050505] border border-[rgba(255,255,255,0.12)] rounded px-2 py-1 text-center"
                                     prop:value=move || module_color.get()
                                     on:input=move |ev| set_module_color.set(event_target_value(&ev))
                                 />
                             </div>
                         </div>
 
-                        // Presets
                         <div class="flex items-center gap-1.5">
                             {
                                 color_presets.into_iter().map(|hex| {
@@ -491,17 +470,17 @@ pub fn App() -> impl IntoView {
                         </div>
                     </div>
 
-                    // Eye Color Picker
+                    // 4b. Eye Frame Color Picker
                     <div class="space-y-2 pt-3 border-t border-[rgba(255,255,255,0.08)]">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-semibold text-[#ffffff] flex items-center gap-1.5">
-                                <span class="w-2.5 h-2.5 rounded-full" style=move || format!("background-color: {}", eye_color.get())></span>
-                                <span>"Eye Color (Corner Finders)"</span>
+                                <span class="w-2.5 h-2.5 rounded-full border border-white/20" style=move || format!("background-color: {}", eye_color.get())></span>
+                                <span>"Eye Frame Color (Outer Frame)"</span>
                             </span>
                             <div class="flex items-center gap-2">
                                 <button
-                                    class="text-[11px] text-[#00f0ff] hover:underline cursor-pointer mr-1 font-mono"
-                                    title="Match module color"
+                                    class="text-[11px] text-[#00f0ff] hover:underline cursor-pointer mr-1"
+                                    title="Sync with module color"
                                     on:click=move |_| set_eye_color.set(module_color.get())
                                 >
                                     "Sync"
@@ -514,14 +493,13 @@ pub fn App() -> impl IntoView {
                                 />
                                 <input
                                     type="text"
-                                    class="w-24 text-xs font-mono uppercase bg-[#050505] border border-[rgba(255,255,255,0.12)] rounded px-2 py-1 text-center"
+                                    class="w-24 text-xs uppercase bg-[#050505] border border-[rgba(255,255,255,0.12)] rounded px-2 py-1 text-center"
                                     prop:value=move || eye_color.get()
                                     on:input=move |ev| set_eye_color.set(event_target_value(&ev))
                                 />
                             </div>
                         </div>
 
-                        // Presets
                         <div class="flex items-center gap-1.5">
                             {
                                 color_presets.into_iter().map(|hex| {
@@ -529,8 +507,54 @@ pub fn App() -> impl IntoView {
                                         <button
                                             class="w-6 h-6 rounded-full border border-white/20 transition-transform hover:scale-110 cursor-pointer"
                                             style=format!("background-color: {hex}")
-                                            title=format!("Set eye color to {hex}")
+                                            title=format!("Set eye frame color to {hex}")
                                             on:click=move |_| set_eye_color.set(hex.to_string())
+                                        ></button>
+                                    }
+                                }).collect_view()
+                            }
+                        </div>
+                    </div>
+
+                    // 4c. Eye Dot Color Picker
+                    <div class="space-y-2 pt-3 border-t border-[rgba(255,255,255,0.08)]">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-[#ffffff] flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full border border-white/20" style=move || format!("background-color: {}", dot_color.get())></span>
+                                <span>"Eye Dot Color (Inner Center)"</span>
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <button
+                                    class="text-[11px] text-[#00f0ff] hover:underline cursor-pointer mr-1"
+                                    title="Sync with module color"
+                                    on:click=move |_| set_dot_color.set(module_color.get())
+                                >
+                                    "Sync"
+                                </button>
+                                <input
+                                    type="color"
+                                    class="w-6 h-6 rounded bg-transparent border border-white/20 cursor-pointer"
+                                    prop:value=move || dot_color.get()
+                                    on:input=move |ev| set_dot_color.set(event_target_value(&ev))
+                                />
+                                <input
+                                    type="text"
+                                    class="w-24 text-xs uppercase bg-[#050505] border border-[rgba(255,255,255,0.12)] rounded px-2 py-1 text-center"
+                                    prop:value=move || dot_color.get()
+                                    on:input=move |ev| set_dot_color.set(event_target_value(&ev))
+                                />
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1.5">
+                            {
+                                color_presets.into_iter().map(|hex| {
+                                    view! {
+                                        <button
+                                            class="w-6 h-6 rounded-full border border-white/20 transition-transform hover:scale-110 cursor-pointer"
+                                            style=format!("background-color: {hex}")
+                                            title=format!("Set eye dot color to {hex}")
+                                            on:click=move |_| set_dot_color.set(hex.to_string())
                                         ></button>
                                     }
                                 }).collect_view()
