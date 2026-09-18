@@ -6,7 +6,7 @@ Live instance: [qr.den1zz.dev](https://qr.den1zz.dev)
 
 ## Capabilities
 
-- Payload types: Plain text, URLs, Wi-Fi credentials (WPA, WEP, unencrypted, hidden SSID), vCard contact cards, and email drafts.
+- Payload types: Plain text and URLs.
 - Query tracking sanitizer: Inspects URL query strings and strips marketing trackers (`utm_*`, `fbclid`, `gclid`, `mc_eid`, and related tags). This reduces matrix density and prevents tracking parameters from reaching the final code.
 - Module and eye styling:
   - Modules: Square, Dots, Rounded, Smooth, and Ente Classy.
@@ -20,6 +20,12 @@ Live instance: [qr.den1zz.dev](https://qr.den1zz.dev)
 - Export options:
   - Vector SVG: Download SVG file or copy raw SVG markup to clipboard.
   - Raster PNG: Export rendered codes at 512x512, 1024x1024, or 2048x2048 resolution with embedded metadata.
+
+## To-do
+
+- [ ] Wi-Fi credentials (WPA, WEP, unencrypted networks, hidden SSID)
+- [ ] vCard contact cards
+- [ ] Email drafts (`mailto:` links with subject and body prefill)
 
 ## Workspace layout
 
