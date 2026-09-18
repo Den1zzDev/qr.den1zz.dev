@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "crates/qr-core",
+    "crates/qr-server",
+    "crates/qr-frontend",
+]
+resolver = "2"
