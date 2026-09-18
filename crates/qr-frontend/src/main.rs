@@ -19,6 +19,7 @@ pub fn App() -> impl IntoView {
     // Essential Styling State (Ente Classy as default)
     let (module_shape, set_module_shape) = signal(ModuleShape::Classy);
     let (eye_frame_shape, set_eye_frame_shape) = signal(EyeFrameShape::Rounded);
+    let (eye_dot_shape, set_eye_dot_shape) = signal(EyeDotShape::Circle);
 
     // Sensible Default Colors: AMOLED Black background, White modules & eye frames, Cyan eye dots
     let (module_color, set_module_color) = signal("#ffffff".to_string());
@@ -78,7 +79,7 @@ pub fn App() -> impl IntoView {
             margin_modules: 2,
             module_shape: module_shape.get(),
             eye_frame_shape: eye_frame_shape.get(),
-            eye_dot_shape: EyeDotShape::Circle,
+            eye_dot_shape: eye_dot_shape.get(),
             code_color: module_color.get(),
             gradient: None,
             eye_color: Some(eye_color.get()),
@@ -199,7 +200,7 @@ pub fn App() -> impl IntoView {
 
     view! {
         <div class="min-h-screen bg-[#000000] text-[#ffffff] pb-16 selection:bg-[#00f0ff]/25 selection:text-[#00f0ff]">
-            // Main Focused Container (KISS Philosophy, no unnecessary top navbar)
+            // Main Focused Container (KISS Philosophy)
             <main class="w-full max-w-[680px] mx-auto px-4 pt-8 sm:pt-12 space-y-5">
                 // Clean Header
                 <div class="text-center space-y-2">
@@ -237,7 +238,7 @@ pub fn App() -> impl IntoView {
                         }}
                     </div>
 
-                    // 2. Query Cleaner Prompt (ha.mr & tools.ralite.dev style)
+                    // Query Cleaner Prompt (ha.mr & tools.ralite.dev style)
                     {move || query_info.get().map(|info| {
                         view! {
                             <div class="p-4 rounded-xl bg-[#080808] border border-[#00f0ff]/40 space-y-2.5 text-left transition-all">
@@ -291,13 +292,8 @@ pub fn App() -> impl IntoView {
                     })}
                 </div>
 
-                // 2. Live AMOLED QR Viewport Stage
-                <div class="glass-panel p-5 sm:p-6 flex flex-col items-center justify-center relative">
-                    <div class="hud-reticle hud-tl"></div>
-                    <div class="hud-reticle hud-tr"></div>
-                    <div class="hud-reticle hud-bl"></div>
-                    <div class="hud-reticle hud-br"></div>
-
+                // 2. Live AMOLED QR Viewport Stage with Integrated Download Controls
+                <div class="glass-panel p-5 sm:p-6 flex flex-col items-center justify-center relative space-y-5">
                     {move || match qr_result_memo.get() {
                         Ok((matrix, svg)) => {
                             let (mod_ratio, eye_ratio, dot_ratio) = contrast_ratios.get();
@@ -328,12 +324,8 @@ pub fn App() -> impl IntoView {
                                         <span class="text-[#a0a0a0]">{format!("v{} ({}×{})", matrix.version, matrix.size, matrix.size)}</span>
                                     </div>
 
-                                    // Viewfinder Frame
+                                    // Viewfinder Frame (clean, no cyan corners)
                                     <div class="viewfinder-frame">
-                                        <div class="hud-reticle hud-tl"></div>
-                                        <div class="hud-reticle hud-tr"></div>
-                                        <div class="hud-reticle hud-bl"></div>
-                                        <div class="hud-reticle hud-br"></div>
                                         <div
                                             class="qr-svg-wrapper"
                                             inner_html=svg
@@ -347,6 +339,71 @@ pub fn App() -> impl IntoView {
                         }.into_any()
                     }}
 
+                    // Download Bar positioned directly below the QR code
+                    <div class="w-full max-w-[420px] space-y-3 pt-2 border-t border-[rgba(255,255,255,0.08)]">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-[#a0a0a0] font-semibold uppercase text-[11px]">"Resolution"</span>
+                            <div class="flex gap-1">
+                                {
+                                    let resolutions = [512u32, 1024u32, 2048u32];
+                                    resolutions.into_iter().map(|res| {
+                                        view! {
+                                            <button
+                                                class=move || {
+                                                    let is_act = target_res.get() == res;
+                                                    if is_act {
+                                                        "px-2.5 py-0.5 rounded-full bg-[#00f0ff] text-[#000000] font-bold text-[11px]"
+                                                    } else {
+                                                        "px-2.5 py-0.5 rounded-full text-[#a0a0a0] hover:text-[#ffffff] text-[11px]"
+                                                    }
+                                                }
+                                                on:click=move |_| set_target_res.set(res)
+                                            >
+                                                {format!("{res}px")}
+                                            </button>
+                                        }
+                                    }).collect_view()
+                                }
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row items-center gap-2">
+                            <button
+                                class="button button-primary w-full sm:flex-1 py-2 text-center text-xs font-bold"
+                                on:click=move |_| {
+                                    let res = target_res.get();
+                                    if let Ok((_, svg)) = qr_result_memo.get() {
+                                        download_png(svg, res);
+                                    }
+                                }
+                            >
+                                {move || format!("↓ Download PNG ({}px)", target_res.get())}
+                            </button>
+
+                            <button
+                                class="button button-white w-full sm:w-auto py-2 px-4 text-xs font-semibold"
+                                on:click=move |_| {
+                                    if let Ok((_, svg)) = qr_result_memo.get() {
+                                        download_svg(svg);
+                                    }
+                                }
+                            >
+                                "↓ SVG"
+                            </button>
+
+                            <button
+                                class="button button-secondary w-full sm:w-auto py-2 px-4 text-xs font-semibold"
+                                on:click=move |_| {
+                                    if let Ok((_, svg)) = qr_result_memo.get() {
+                                        copy_text_to_clipboard(svg, "SVG");
+                                    }
+                                }
+                            >
+                                "Copy SVG"
+                            </button>
+                        </div>
+                    </div>
+
                     // Toast Notification
                     {move || notification_msg.get().map(|msg| {
                         view! {
@@ -357,13 +414,17 @@ pub fn App() -> impl IntoView {
                     })}
                 </div>
 
-                // 3. Module & Eye Shape Configuration
+                // 3. Shape Configuration: Modules, Eye Frame, and Eye Dot
                 <div class="glass-panel p-4 sm:p-5 space-y-4">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="text-[11px] uppercase font-semibold text-[#a0a0a0] tracking-wider pb-1 border-b border-[rgba(255,255,255,0.08)]">
+                        "Shapes & Style"
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         // Module Shape
                         <div>
                             <label class="block text-[#a0a0a0] text-[11px] mb-1.5 uppercase font-semibold">"Module Shape"</label>
-                            <div class="grid grid-cols-4 gap-1">
+                            <div class="grid grid-cols-2 gap-1">
                                 {
                                     let shapes = [
                                         (ModuleShape::Classy, "Classy"),
@@ -394,13 +455,13 @@ pub fn App() -> impl IntoView {
 
                         // Eye Frame Shape
                         <div>
-                            <label class="block text-[#a0a0a0] text-[11px] mb-1.5 uppercase font-semibold">"Eye Shape"</label>
-                            <div class="grid grid-cols-3 gap-1">
+                            <label class="block text-[#a0a0a0] text-[11px] mb-1.5 uppercase font-semibold">"Eye Frame Shape"</label>
+                            <div class="grid grid-cols-1 gap-1">
                                 {
                                     let frames = [
-                                        (EyeFrameShape::Rounded, "Round"),
-                                        (EyeFrameShape::Circle, "Circle"),
-                                        (EyeFrameShape::Square, "Square"),
+                                        (EyeFrameShape::Rounded, "Round Frame"),
+                                        (EyeFrameShape::Circle, "Circle Frame"),
+                                        (EyeFrameShape::Square, "Square Frame"),
                                     ];
                                     frames.into_iter().map(|(f, label)| {
                                         view! {
@@ -414,6 +475,37 @@ pub fn App() -> impl IntoView {
                                                     }
                                                 }
                                                 on:click=move |_| set_eye_frame_shape.set(f)
+                                            >
+                                                {label}
+                                            </button>
+                                        }
+                                    }).collect_view()
+                                }
+                            </div>
+                        </div>
+
+                        // Eye Dot Shape
+                        <div>
+                            <label class="block text-[#a0a0a0] text-[11px] mb-1.5 uppercase font-semibold">"Eye Dot Shape"</label>
+                            <div class="grid grid-cols-1 gap-1">
+                                {
+                                    let dots = [
+                                        (EyeDotShape::Circle, "Circle Dot"),
+                                        (EyeDotShape::Rounded, "Round Dot"),
+                                        (EyeDotShape::Square, "Square Dot"),
+                                    ];
+                                    dots.into_iter().map(|(d, label)| {
+                                        view! {
+                                            <button
+                                                class=move || {
+                                                    let active = eye_dot_shape.get() == d;
+                                                    if active {
+                                                        "py-1.5 text-xs rounded-md border border-[#00f0ff] bg-[#00f0ff]/15 text-[#00f0ff] font-bold"
+                                                    } else {
+                                                        "py-1.5 text-xs rounded-md border border-[rgba(255,255,255,0.12)] bg-[#050505] text-[#a0a0a0] hover:text-[#ffffff]"
+                                                    }
+                                                }
+                                                on:click=move |_| set_eye_dot_shape.set(d)
                                             >
                                                 {label}
                                             </button>
@@ -637,71 +729,6 @@ pub fn App() -> impl IntoView {
                                 }.into_any()
                             }}
                         </div>
-                    </div>
-                </div>
-
-                // 5. One-Click Export Toolbar
-                <div class="glass-panel p-4 sm:p-5 space-y-3">
-                    <div class="flex items-center justify-between text-xs pb-2 border-b border-[rgba(255,255,255,0.08)]">
-                        <span class="text-[#a0a0a0] font-semibold uppercase text-[11px]">"Resolution"</span>
-                        <div class="flex gap-1">
-                            {
-                                let resolutions = [512u32, 1024u32, 2048u32];
-                                resolutions.into_iter().map(|res| {
-                                    view! {
-                                        <button
-                                            class=move || {
-                                                let is_act = target_res.get() == res;
-                                                if is_act {
-                                                    "px-2.5 py-0.5 rounded-full bg-[#00f0ff] text-[#000000] font-bold text-[11px]"
-                                                } else {
-                                                    "px-2.5 py-0.5 rounded-full text-[#a0a0a0] hover:text-[#ffffff] text-[11px]"
-                                                }
-                                            }
-                                            on:click=move |_| set_target_res.set(res)
-                                        >
-                                            {format!("{res}px")}
-                                        </button>
-                                    }
-                                }).collect_view()
-                            }
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row items-center gap-2.5">
-                        <button
-                            class="button button-primary w-full sm:flex-1 py-2 text-center text-xs font-bold"
-                            on:click=move |_| {
-                                let res = target_res.get();
-                                if let Ok((_, svg)) = qr_result_memo.get() {
-                                    download_png(svg, res);
-                                }
-                            }
-                        >
-                            {move || format!("↓ Download PNG ({}px)", target_res.get())}
-                        </button>
-
-                        <button
-                            class="button button-white w-full sm:w-auto py-2 px-4 text-xs font-semibold"
-                            on:click=move |_| {
-                                if let Ok((_, svg)) = qr_result_memo.get() {
-                                    download_svg(svg);
-                                }
-                            }
-                        >
-                            "↓ SVG"
-                        </button>
-
-                        <button
-                            class="button button-secondary w-full sm:w-auto py-2 px-4 text-xs font-semibold"
-                            on:click=move |_| {
-                                if let Ok((_, svg)) = qr_result_memo.get() {
-                                    copy_text_to_clipboard(svg, "SVG");
-                                }
-                            }
-                        >
-                            "Copy SVG"
-                        </button>
                     </div>
                 </div>
             </main>
