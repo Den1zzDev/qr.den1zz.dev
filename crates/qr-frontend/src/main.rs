@@ -21,12 +21,12 @@ pub fn App() -> impl IntoView {
     let (eye_frame_shape, set_eye_frame_shape) = signal(EyeFrameShape::Rounded);
     let (eye_dot_shape, set_eye_dot_shape) = signal(EyeDotShape::Circle);
 
-    // Sensible Default Colors: AMOLED Black background, White modules & eye frames, Cyan eye dots
-    let (module_color, set_module_color) = signal("#ffffff".to_string());
-    let (eye_color, set_eye_color) = signal("#ffffff".to_string());
-    let (dot_color, set_dot_color) = signal("#00f0ff".to_string());
+    // Default Colors: White background with AMOLED black modules and cyan accent eye dots
+    let (module_color, set_module_color) = signal("#000000".to_string());
+    let (eye_color, set_eye_color) = signal("#000000".to_string());
+    let (dot_color, set_dot_color) = signal("#008b99".to_string());
     let (is_transparent_bg, set_is_transparent_bg) = signal(false);
-    let (bg_color, set_bg_color) = signal("#000000".to_string());
+    let (bg_color, set_bg_color) = signal("#ffffff".to_string());
 
     // Optional Center Logo
     let (logo_data_url, set_logo_data_url) = signal(Option::<String>::None);
@@ -196,7 +196,7 @@ pub fn App() -> impl IntoView {
         }
     };
 
-    let color_presets = ["#ffffff", "#00f0ff", "#38ef7d", "#ff3b80", "#f59e0b", "#a855f7"];
+    let color_presets = ["#000000", "#008b99", "#00f0ff", "#ffffff", "#1e293b", "#e11d48"];
 
     view! {
         <div class="min-h-screen bg-[#000000] text-[#ffffff] pb-16 selection:bg-[#00f0ff]/25 selection:text-[#00f0ff]">
@@ -414,7 +414,7 @@ pub fn App() -> impl IntoView {
                     })}
                 </div>
 
-                // 3. Shape Configuration: Modules, Eye Frame, and Eye Dot
+                // 3. Shape Configuration: Modules, Eye Frame, and Eye Dot (Consistent 3-Column Layout)
                 <div class="glass-panel p-4 sm:p-5 space-y-4">
                     <div class="text-[11px] uppercase font-semibold text-[#a0a0a0] tracking-wider pb-1 border-b border-[rgba(255,255,255,0.08)]">
                         "Shapes & Style"
@@ -422,9 +422,9 @@ pub fn App() -> impl IntoView {
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         // Module Shape
-                        <div>
-                            <label class="block text-[#a0a0a0] text-[11px] mb-1.5 uppercase font-semibold">"Module Shape"</label>
-                            <div class="grid grid-cols-2 gap-1">
+                        <div class="space-y-1.5">
+                            <label class="block text-[#a0a0a0] text-[11px] uppercase font-semibold tracking-wider">"Module Shape"</label>
+                            <div class="flex flex-col gap-1.5">
                                 {
                                     let shapes = [
                                         (ModuleShape::Classy, "Classy"),
@@ -438,9 +438,9 @@ pub fn App() -> impl IntoView {
                                                 class=move || {
                                                     let active = module_shape.get() == sh;
                                                     if active {
-                                                        "py-1.5 text-xs rounded-md border border-[#00f0ff] bg-[#00f0ff]/15 text-[#00f0ff] font-bold"
+                                                        "w-full py-2 px-3 text-xs rounded-lg border border-[#00f0ff] bg-[#00f0ff]/15 text-[#00f0ff] font-bold transition-all text-center"
                                                     } else {
-                                                        "py-1.5 text-xs rounded-md border border-[rgba(255,255,255,0.12)] bg-[#050505] text-[#a0a0a0] hover:text-[#ffffff]"
+                                                        "w-full py-2 px-3 text-xs rounded-lg border border-[rgba(255,255,255,0.12)] bg-[#050505] text-[#a0a0a0] hover:text-[#ffffff] hover:border-[rgba(255,255,255,0.25)] transition-all text-center"
                                                     }
                                                 }
                                                 on:click=move |_| set_module_shape.set(sh)
@@ -454,9 +454,9 @@ pub fn App() -> impl IntoView {
                         </div>
 
                         // Eye Frame Shape
-                        <div>
-                            <label class="block text-[#a0a0a0] text-[11px] mb-1.5 uppercase font-semibold">"Eye Frame Shape"</label>
-                            <div class="grid grid-cols-1 gap-1">
+                        <div class="space-y-1.5">
+                            <label class="block text-[#a0a0a0] text-[11px] uppercase font-semibold tracking-wider">"Eye Frame Shape"</label>
+                            <div class="flex flex-col gap-1.5">
                                 {
                                     let frames = [
                                         (EyeFrameShape::Rounded, "Round Frame"),
@@ -469,9 +469,9 @@ pub fn App() -> impl IntoView {
                                                 class=move || {
                                                     let active = eye_frame_shape.get() == f;
                                                     if active {
-                                                        "py-1.5 text-xs rounded-md border border-[#00f0ff] bg-[#00f0ff]/15 text-[#00f0ff] font-bold"
+                                                        "w-full py-2 px-3 text-xs rounded-lg border border-[#00f0ff] bg-[#00f0ff]/15 text-[#00f0ff] font-bold transition-all text-center"
                                                     } else {
-                                                        "py-1.5 text-xs rounded-md border border-[rgba(255,255,255,0.12)] bg-[#050505] text-[#a0a0a0] hover:text-[#ffffff]"
+                                                        "w-full py-2 px-3 text-xs rounded-lg border border-[rgba(255,255,255,0.12)] bg-[#050505] text-[#a0a0a0] hover:text-[#ffffff] hover:border-[rgba(255,255,255,0.25)] transition-all text-center"
                                                     }
                                                 }
                                                 on:click=move |_| set_eye_frame_shape.set(f)
@@ -485,9 +485,9 @@ pub fn App() -> impl IntoView {
                         </div>
 
                         // Eye Dot Shape
-                        <div>
-                            <label class="block text-[#a0a0a0] text-[11px] mb-1.5 uppercase font-semibold">"Eye Dot Shape"</label>
-                            <div class="grid grid-cols-1 gap-1">
+                        <div class="space-y-1.5">
+                            <label class="block text-[#a0a0a0] text-[11px] uppercase font-semibold tracking-wider">"Eye Dot Shape"</label>
+                            <div class="flex flex-col gap-1.5">
                                 {
                                     let dots = [
                                         (EyeDotShape::Circle, "Circle Dot"),
@@ -500,9 +500,9 @@ pub fn App() -> impl IntoView {
                                                 class=move || {
                                                     let active = eye_dot_shape.get() == d;
                                                     if active {
-                                                        "py-1.5 text-xs rounded-md border border-[#00f0ff] bg-[#00f0ff]/15 text-[#00f0ff] font-bold"
+                                                        "w-full py-2 px-3 text-xs rounded-lg border border-[#00f0ff] bg-[#00f0ff]/15 text-[#00f0ff] font-bold transition-all text-center"
                                                     } else {
-                                                        "py-1.5 text-xs rounded-md border border-[rgba(255,255,255,0.12)] bg-[#050505] text-[#a0a0a0] hover:text-[#ffffff]"
+                                                        "w-full py-2 px-3 text-xs rounded-lg border border-[rgba(255,255,255,0.12)] bg-[#050505] text-[#a0a0a0] hover:text-[#ffffff] hover:border-[rgba(255,255,255,0.25)] transition-all text-center"
                                                     }
                                                 }
                                                 on:click=move |_| set_eye_dot_shape.set(d)

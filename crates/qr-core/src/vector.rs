@@ -81,11 +81,11 @@ impl Default for VectorRenderConfig {
             module_shape: ModuleShape::Classy,
             eye_frame_shape: EyeFrameShape::Rounded,
             eye_dot_shape: EyeDotShape::Circle,
-            code_color: "#ffffff".to_string(),
+            code_color: "#000000".to_string(),
             gradient: None,
-            eye_color: Some("#ffffff".to_string()),
-            eye_dot_color: Some("#00f0ff".to_string()),
-            bg_color: Some("#000000".to_string()),
+            eye_color: Some("#000000".to_string()),
+            eye_dot_color: Some("#008b99".to_string()),
+            bg_color: Some("#ffffff".to_string()),
             logo: None,
             cta: None,
             alt_text: Some("QR Code".to_string()),
@@ -527,8 +527,8 @@ mod tests {
         let svg = VectorRenderer::render_svg(&matrix, &config);
         assert!(svg.starts_with("<svg"));
         assert!(svg.ends_with("</svg>"));
-        assert!(svg.contains("fill=\"#ffffff\""));
-        assert!(svg.contains("fill=\"#00f0ff\""));
+        assert!(svg.contains("fill=\"#000000\""));
+        assert!(svg.contains("fill=\"#008b99\""));
     }
 
     #[test]
