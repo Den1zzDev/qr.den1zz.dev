@@ -293,7 +293,7 @@ pub fn App() -> impl IntoView {
                 </div>
 
                 // 2. Live AMOLED QR Viewport Stage with Integrated Download Controls
-                <div class="glass-panel p-5 sm:p-6 flex flex-col items-center justify-center relative space-y-5">
+                <div class="glass-panel p-4 sm:p-6 flex flex-col items-center justify-center relative space-y-4 sm:space-y-5">
                     {move || match qr_result_memo.get() {
                         Ok((matrix, svg)) => {
                             let (mod_ratio, eye_ratio, dot_ratio) = contrast_ratios.get();
@@ -305,23 +305,23 @@ pub fn App() -> impl IntoView {
                             view! {
                                 <div class="w-full flex flex-col items-center justify-center space-y-4">
                                     // Scannability status pill
-                                    <div class="flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-[#050505] border border-[rgba(255,255,255,0.12)]">
+                                    <div class="flex items-center justify-center gap-1 sm:gap-2 text-[10px] sm:text-xs px-2.5 sm:px-3 py-1 rounded-full bg-[#050505] border border-[rgba(255,255,255,0.12)] whitespace-nowrap max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                                         <span class=if all_ok {
-                                            "w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"
+                                            "w-2 h-2 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"
                                         } else {
-                                            "w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24]"
+                                            "w-2 h-2 shrink-0 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24]"
                                         }></span>
-                                        <span class="text-[#ffffff]">
+                                        <span class="text-[#ffffff] shrink-0 whitespace-nowrap">
                                             {if all_ok { "Ready to Scan" } else { "Low Contrast" }}
                                         </span>
-                                        <span class="text-[#555555]">"•"</span>
-                                        <span class="text-[#ffffff]" title="Module Contrast">{format!("M:{mod_ratio:.1}:1")}</span>
-                                        <span class="text-[#555555]">"•"</span>
-                                        <span class="text-[#ffffff]" title="Eye Frame Contrast">{format!("E:{eye_ratio:.1}:1")}</span>
-                                        <span class="text-[#555555]">"•"</span>
-                                        <span class="text-[#00f0ff]" title="Eye Dot Contrast">{format!("D:{dot_ratio:.1}:1")}</span>
-                                        <span class="text-[#555555]">"•"</span>
-                                        <span class="text-[#a0a0a0]">{format!("v{} ({}×{})", matrix.version, matrix.size, matrix.size)}</span>
+                                        <span class="hidden sm:inline text-[#555555] shrink-0">"•"</span>
+                                        <span class="hidden sm:inline text-[#ffffff] shrink-0" title="Module Contrast">{format!("M:{mod_ratio:.1}:1")}</span>
+                                        <span class="hidden sm:inline text-[#555555] shrink-0">"•"</span>
+                                        <span class="hidden sm:inline text-[#ffffff] shrink-0" title="Eye Frame Contrast">{format!("E:{eye_ratio:.1}:1")}</span>
+                                        <span class="text-[#555555] shrink-0">"•"</span>
+                                        <span class="text-[#00f0ff] shrink-0" title="Eye Dot Contrast">{format!("D:{dot_ratio:.1}:1")}</span>
+                                        <span class="text-[#555555] shrink-0">"•"</span>
+                                        <span class="text-[#a0a0a0] shrink-0">{format!("v{} ({}×{})", matrix.version, matrix.size, matrix.size)}</span>
                                     </div>
 
                                     // Viewfinder Frame (clean, no cyan corners)

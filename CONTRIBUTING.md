@@ -7,8 +7,8 @@ Thank you for your interest in contributing to QR Code Studio.
 This repository is organized as a Cargo workspace with three crates:
 
 - `crates/qr-core`: Core library containing matrix calculation, URL tracking sanitizer, vector SVG rendering, WCAG contrast verification, and PNG rasterization.
-- `crates/qr-frontend`: Leptos client-side WebAssembly interface built with Trunk. Runs entirely in the browser sandbox.
-- `crates/qr-server`: Optional Axum HTTP server to serve static assets locally.
+- `crates/qr-frontend`: Leptos WebAssembly application supporting client-side hydration (`hydrate`) and compile-time pre-rendering (`ssr`).
+- `crates/qr-server`: Axum HTTP server providing Leptos streaming SSR and QR processing endpoints.
 
 ## Prerequisites
 
@@ -19,37 +19,42 @@ You need the following tools installed:
   ```bash
   rustup target add wasm32-unknown-unknown
   ```
-- Trunk build tool:
+- `wasm-bindgen-cli` (v0.2.128):
   ```bash
-  cargo install trunk
+  cargo install wasm-bindgen-cli --version 0.2.128
   ```
-  or prebuilt binary via `cargo binstall trunk`.
 
 ## Local development
 
-### Running the WebAssembly frontend
+### Building the WebAssembly frontend
 
-Run Trunk directly inside the frontend directory:
+To compile the frontend and generate the pre-rendered static site:
 
 ```bash
-cd crates/qr-frontend
-trunk serve --port 3000
+cargo build -p qr-frontend --target wasm32-unknown-unknown --features hydrate
+mkdir -p crates/qr-frontend/dist
+wasm-bindgen --target web --out-dir crates/qr-frontend/dist --no-typescript target/wasm32-unknown-unknown/debug/qr_frontend.wasm
+cargo run -p qr-frontend --bin prerender --features ssr -- crates/qr-frontend/dist
 ```
 
-Open `http://localhost:3000` in your browser. Trunk will watch for changes and recompile the WebAssembly application automatically.
-
-### Running the optional Axum server
-
-To run the Axum server alongside static output:
+You can serve `crates/qr-frontend/dist` with any static web server:
 
 ```bash
-cd crates/qr-frontend
-trunk build --release
-cd ../..
+python3 -m http.server 4321 --directory crates/qr-frontend/dist
+```
+
+### Running the Axum server
+
+To run the Axum server with streaming SSR and static client assets:
+
+```bash
+cargo build -p qr-frontend --target wasm32-unknown-unknown --features hydrate
+mkdir -p crates/qr-server/pkg
+wasm-bindgen --target web --out-dir crates/qr-server/pkg --no-typescript target/wasm32-unknown-unknown/debug/qr_frontend.wasm
 cargo run -p qr-server
 ```
 
-The server listens on `http://127.0.0.1:3000`.
+The server listens on `http://127.0.0.1:4321`.
 
 ## Testing
 
