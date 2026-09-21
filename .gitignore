@@ -1,6 +1,7 @@
 target/
 dist/
 crates/qr-frontend/dist/
+crates/qr-server/pkg/
 **/*.rs.bk
 .DS_Store
 *.swp
