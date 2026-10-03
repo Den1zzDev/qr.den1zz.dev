@@ -113,10 +113,12 @@ pub fn App() -> impl IntoView {
     // Temporary notification helper
     let show_toast = move |msg: String| {
         set_notification_msg.set(Some(msg));
-        wasm_bindgen_futures::spawn_local(async move {
-            gloo_timers::future::TimeoutFuture::new(2200).await;
-            set_notification_msg.set(None);
-        });
+        set_timeout(
+            move || {
+                set_notification_msg.set(None);
+            },
+            std::time::Duration::from_millis(2200),
+        );
     };
 
     // Clipboard copy helper
@@ -168,28 +170,36 @@ pub fn App() -> impl IntoView {
                         .and_then(|c| c.dyn_into::<web_sys::CanvasRenderingContext2d>().ok());
 
                     if let Some(ctx) = ctx {
-                        let img = HtmlImageElement::new().unwrap();
-                        let img_clone = img.clone();
-                        let encoded = js_sys::encode_uri_component(&svg_content);
-                        let src = format!("data:image/svg+xml;utf8,{encoded}");
+                        let blob_parts = js_sys::Array::new();
+                        blob_parts.push(&wasm_bindgen::JsValue::from_str(&svg_content));
+                        let bag = BlobPropertyBag::new();
+                        bag.set_type("image/svg+xml;charset=utf-8");
+                        if let Ok(blob) = Blob::new_with_str_sequence_and_options(&blob_parts, &bag) {
+                            if let Ok(url) = Url::create_object_url_with_blob(&blob) {
+                                let img = HtmlImageElement::new().unwrap();
+                                let img_clone = img.clone();
+                                let url_clone = url.clone();
 
-                        let onload = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
-                            let _ = ctx.draw_image_with_html_image_element_and_dw_and_dh(
-                                &img_clone, 0.0, 0.0, res as f64, res as f64,
-                            );
-                            if let Ok(data_url) = canvas.to_data_url_with_type("image/png") {
-                                if let Ok(a_el) = doc.create_element("a") {
-                                    let a = a_el.unchecked_into::<HtmlAnchorElement>();
-                                    a.set_href(&data_url);
-                                    a.set_download(&format!("qr-code-{res}x{res}.png"));
-                                    a.click();
-                                }
+                                let onload = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
+                                    let _ = ctx.draw_image_with_html_image_element_and_dw_and_dh(
+                                        &img_clone, 0.0, 0.0, res as f64, res as f64,
+                                    );
+                                    let _ = Url::revoke_object_url(&url_clone);
+                                    if let Ok(data_url) = canvas.to_data_url_with_type("image/png") {
+                                        if let Ok(a_el) = doc.create_element("a") {
+                                            let a = a_el.unchecked_into::<HtmlAnchorElement>();
+                                            a.set_href(&data_url);
+                                            a.set_download(&format!("qr-code-{res}x{res}.png"));
+                                            a.click();
+                                        }
+                                    }
+                                }) as Box<dyn FnMut()>);
+
+                                img.set_onload(Some(onload.as_ref().unchecked_ref()));
+                                onload.forget();
+                                img.set_src(&url);
                             }
-                        }) as Box<dyn FnMut()>);
-
-                        img.set_onload(Some(onload.as_ref().unchecked_ref()));
-                        onload.forget();
-                        img.set_src(&src);
+                        }
                     }
                 }
             }

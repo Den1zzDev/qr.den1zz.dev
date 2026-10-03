@@ -240,7 +240,8 @@ impl VectorRenderer {
             ));
         }
 
-        // 2. Body modules
+        // 2. Body modules (combined into compound path)
+        let mut body_path = String::new();
         for y in 0..size {
             for x in 0..size {
                 if !is_active(x, y) {
@@ -255,8 +256,10 @@ impl VectorRenderer {
                         let cx = px + scale / 2.0;
                         let cy = py + scale / 2.0;
                         let r = scale * 0.44;
-                        elements.push_str(&format!(
-                            r#"<circle cx="{cx}" cy="{cy}" r="{r:.2}" fill="{body_fill}"/>"#
+                        let r2 = 2.0 * r;
+                        body_path.push_str(&format!(
+                            "M {x:.2} {cy:.2} a {r:.2} {r:.2} 0 1 0 {r2:.2} 0 a {r:.2} {r:.2} 0 1 0 -{r2:.2} 0 Z ",
+                            x = cx - r
                         ));
                     }
                     ModuleShape::Smooth => {
@@ -272,33 +275,32 @@ impl VectorRenderer {
                         let r_bl = if !bottom && !left { r } else { 0.0 };
 
                         if r_tl == 0.0 && r_tr == 0.0 && r_br == 0.0 && r_bl == 0.0 {
-                            elements.push_str(&format!(
-                                r#"<rect x="{px}" y="{py}" width="{scale}" height="{scale}" fill="{body_fill}"/>"#
+                            body_path.push_str(&format!(
+                                "M {px:.2} {py:.2} h {scale:.2} v {scale:.2} h -{scale:.2} Z "
                             ));
                         } else {
-                            let mut d = format!("M {x} {y}", x = px + r_tl, y = py);
-                            d.push_str(&format!(" h {}", scale - r_tl - r_tr));
+                            let mut d = format!("M {x:.2} {y:.2}", x = px + r_tl, y = py);
+                            d.push_str(&format!(" h {:.2}", scale - r_tl - r_tr));
                             if r_tr > 0.0 {
-                                d.push_str(&format!(" a {r_tr} {r_tr} 0 0 1 {r_tr} {r_tr}"));
+                                d.push_str(&format!(" a {r_tr:.2} {r_tr:.2} 0 0 1 {r_tr:.2} {r_tr:.2}"));
                             }
-                            d.push_str(&format!(" v {}", scale - r_tr - r_br));
+                            d.push_str(&format!(" v {:.2}", scale - r_tr - r_br));
                             if r_br > 0.0 {
-                                d.push_str(&format!(" a {r_br} {r_br} 0 0 1 -{r_br} {r_br}"));
+                                d.push_str(&format!(" a {r_br:.2} {r_br:.2} 0 0 1 -{r_br:.2} {r_br:.2}"));
                             }
-                            d.push_str(&format!(" h -{}", scale - r_br - r_bl));
+                            d.push_str(&format!(" h -{:.2}", scale - r_br - r_bl));
                             if r_bl > 0.0 {
-                                d.push_str(&format!(" a {r_bl} {r_bl} 0 0 1 -{r_bl} -{r_bl}"));
+                                d.push_str(&format!(" a {r_bl:.2} {r_bl:.2} 0 0 1 -{r_bl:.2} -{r_bl:.2}"));
                             }
-                            d.push_str(&format!(" v -{}", scale - r_bl - r_tl));
+                            d.push_str(&format!(" v -{:.2}", scale - r_bl - r_tl));
                             if r_tl > 0.0 {
-                                d.push_str(&format!(" a {r_tl} {r_tl} 0 0 1 {r_tl} -{r_tl}"));
+                                d.push_str(&format!(" a {r_tl:.2} {r_tl:.2} 0 0 1 {r_tl:.2} -{r_tl:.2}"));
                             }
-                            d.push_str(" Z");
-                            elements.push_str(&format!(r#"<path d="{d}" fill="{body_fill}"/>"#));
+                            d.push_str(" Z ");
+                            body_path.push_str(&d);
                         }
                     }
                     ModuleShape::Classy => {
-                        // Matching ente-toys/qr and qr-code-styling _drawClassy
                         let top = y > 0 && is_active(x, y - 1);
                         let right = x + 1 < size && is_active(x + 1, y);
                         let bottom = y + 1 < size && is_active(x, y + 1);
@@ -308,58 +310,61 @@ impl VectorRenderer {
                         let (r_tl, r_tr, r_br, r_bl) = if left || right || top || bottom {
                             if left || top {
                                 if right || bottom {
-                                    // Chain interior
                                     (0.0, 0.0, 0.0, 0.0)
                                 } else {
-                                    // Terminating corner
                                     (0.0, 0.0, r, 0.0)
                                 }
                             } else {
-                                // Starting corner
                                 (r, 0.0, 0.0, 0.0)
                             }
                         } else {
-                            // Isolated dot: opposite diagonal corners rounded (leaf shape)
                             (r, 0.0, r, 0.0)
                         };
 
                         if r_tl == 0.0 && r_tr == 0.0 && r_br == 0.0 && r_bl == 0.0 {
-                            elements.push_str(&format!(
-                                r#"<rect x="{px}" y="{py}" width="{scale}" height="{scale}" fill="{body_fill}"/>"#
+                            body_path.push_str(&format!(
+                                "M {px:.2} {py:.2} h {scale:.2} v {scale:.2} h -{scale:.2} Z "
                             ));
                         } else {
-                            let mut d = format!("M {x} {y}", x = px + r_tl, y = py);
-                            d.push_str(&format!(" h {}", scale - r_tl - r_tr));
+                            let mut d = format!("M {x:.2} {y:.2}", x = px + r_tl, y = py);
+                            d.push_str(&format!(" h {:.2}", scale - r_tl - r_tr));
                             if r_tr > 0.0 {
-                                d.push_str(&format!(" a {r_tr} {r_tr} 0 0 1 {r_tr} {r_tr}"));
+                                d.push_str(&format!(" a {r_tr:.2} {r_tr:.2} 0 0 1 {r_tr:.2} {r_tr:.2}"));
                             }
-                            d.push_str(&format!(" v {}", scale - r_tr - r_br));
+                            d.push_str(&format!(" v {:.2}", scale - r_tr - r_br));
                             if r_br > 0.0 {
-                                d.push_str(&format!(" a {r_br} {r_br} 0 0 1 -{r_br} {r_br}"));
+                                d.push_str(&format!(" a {r_br:.2} {r_br:.2} 0 0 1 -{r_br:.2} {r_br:.2}"));
                             }
-                            d.push_str(&format!(" h -{}", scale - r_br - r_bl));
+                            d.push_str(&format!(" h -{:.2}", scale - r_br - r_bl));
                             if r_bl > 0.0 {
-                                d.push_str(&format!(" a {r_bl} {r_bl} 0 0 1 -{r_bl} -{r_bl}"));
+                                d.push_str(&format!(" a {r_bl:.2} {r_bl:.2} 0 0 1 -{r_bl:.2} -{r_bl:.2}"));
                             }
-                            d.push_str(&format!(" v -{}", scale - r_bl - r_tl));
+                            d.push_str(&format!(" v -{:.2}", scale - r_bl - r_tl));
                             if r_tl > 0.0 {
-                                d.push_str(&format!(" a {r_tl} {r_tl} 0 0 1 {r_tl} -{r_tl}"));
+                                d.push_str(&format!(" a {r_tl:.2} {r_tl:.2} 0 0 1 {r_tl:.2} -{r_tl:.2}"));
                             }
-                            d.push_str(" Z");
-                            elements.push_str(&format!(r#"<path d="{d}" fill="{body_fill}"/>"#));
+                            d.push_str(" Z ");
+                            body_path.push_str(&d);
                         }
                     }
                     ModuleShape::Square => {
-                        elements.push_str(&format!(
-                            r#"<rect x="{px}" y="{py}" width="{scale}" height="{scale}" fill="{body_fill}"/>"#
+                        body_path.push_str(&format!(
+                            "M {px:.2} {py:.2} h {scale:.2} v {scale:.2} h -{scale:.2} Z "
                         ));
                     }
                 }
             }
         }
 
-        // 3. Eye frames & dots
+        if !body_path.is_empty() {
+            elements.push_str(&format!(r#"<path d="{}" fill="{body_fill}"/>"#, body_path.trim_end()));
+        }
+
+        // 3. Eye frames & dots (combined compound paths)
+        let mut eye_frame_path = String::new();
+        let mut eye_dot_path = String::new();
         let finders = [(0, 0), (size - 7, 0), (0, size - 7)];
+
         for &(fx, fy) in &finders {
             let px = padding + fx as f32 * scale;
             let py = padding + fy as f32 * scale;
@@ -370,12 +375,9 @@ impl VectorRenderer {
                     let cx = px + 3.5 * scale;
                     let ro = 3.5 * scale;
                     let ri = 2.5 * scale;
-                    let d = format!(
-                        "M {cx} {py} a {ro} {ro} 0 1 0 0.001 0 Z M {cx} {py_inner} a {ri} {ri} 0 1 1 -0.001 0 Z",
+                    eye_frame_path.push_str(&format!(
+                        "M {cx} {py} a {ro} {ro} 0 1 0 0.001 0 Z M {cx} {py_inner} a {ri} {ri} 0 1 1 -0.001 0 Z ",
                         py_inner = py + scale
-                    );
-                    elements.push_str(&format!(
-                        r#"<path fill-rule="evenodd" d="{d}" fill="{eye_fill}"/>"#
                     ));
                 }
                 EyeFrameShape::Rounded => {
@@ -392,21 +394,17 @@ impl VectorRenderer {
                         py_ri = py + scale,
                         w_in = 5.0 * scale - 2.0 * ri
                     );
-                    elements.push_str(&format!(
-                        r#"<path fill-rule="evenodd" d="{outer_d} {inner_d}" fill="{eye_fill}"/>"#
-                    ));
+                    eye_frame_path.push_str(&format!("{outer_d} {inner_d} "));
                 }
                 EyeFrameShape::Square => {
                     let d = format!(
-                        "M {px} {py} h {outer} v {outer} h -{outer} Z M {inner_x} {inner_y} v {inner} h {inner} v -{inner} Z",
+                        "M {px} {py} h {outer} v {outer} h -{outer} Z M {inner_x} {inner_y} v {inner} h {inner} v -{inner} Z ",
                         outer = 7.0 * scale,
                         inner_x = px + scale,
                         inner_y = py + scale,
                         inner = 5.0 * scale
                     );
-                    elements.push_str(&format!(
-                        r#"<path fill-rule="evenodd" d="{d}" fill="{eye_fill}"/>"#
-                    ));
+                    eye_frame_path.push_str(&d);
                 }
             }
 
@@ -420,22 +418,40 @@ impl VectorRenderer {
                     let cx = dot_x + dot_size / 2.0;
                     let cy = dot_y + dot_size / 2.0;
                     let r = dot_size / 2.0;
-                    elements.push_str(&format!(
-                        r#"<circle cx="{cx}" cy="{cy}" r="{r}" fill="{eye_dot_fill}"/>"#
+                    let r2 = 2.0 * r;
+                    eye_dot_path.push_str(&format!(
+                        "M {x:.2} {cy:.2} a {r:.2} {r:.2} 0 1 0 {r2:.2} 0 a {r:.2} {r:.2} 0 1 0 -{r2:.2} 0 Z ",
+                        x = cx - r
                     ));
                 }
                 EyeDotShape::Rounded => {
                     let r = scale * 0.9;
-                    elements.push_str(&format!(
-                        r#"<rect x="{dot_x}" y="{dot_y}" width="{dot_size}" height="{dot_size}" rx="{r}" ry="{r}" fill="{eye_dot_fill}"/>"#
+                    let w = dot_size - 2.0 * r;
+                    eye_dot_path.push_str(&format!(
+                        "M {x:.2} {dot_y:.2} h {w:.2} a {r:.2} {r:.2} 0 0 1 {r:.2} {r:.2} v {w:.2} a {r:.2} {r:.2} 0 0 1 -{r:.2} {r:.2} h -{w:.2} a {r:.2} {r:.2} 0 0 1 -{r:.2} -{r:.2} v -{w:.2} a {r:.2} {r:.2} 0 0 1 {r:.2} -{r:.2} Z ",
+                        x = dot_x + r
                     ));
                 }
                 EyeDotShape::Square => {
-                    elements.push_str(&format!(
-                        r#"<rect x="{dot_x}" y="{dot_y}" width="{dot_size}" height="{dot_size}" fill="{eye_dot_fill}"/>"#
+                    eye_dot_path.push_str(&format!(
+                        "M {dot_x:.2} {dot_y:.2} h {dot_size:.2} v {dot_size:.2} h -{dot_size:.2} Z "
                     ));
                 }
             }
+        }
+
+        if !eye_frame_path.is_empty() {
+            elements.push_str(&format!(
+                r#"<path fill-rule="evenodd" d="{}" fill="{eye_fill}"/>"#,
+                eye_frame_path.trim_end()
+            ));
+        }
+
+        if !eye_dot_path.is_empty() {
+            elements.push_str(&format!(
+                r#"<path d="{}" fill="{eye_dot_fill}"/>"#,
+                eye_dot_path.trim_end()
+            ));
         }
 
         // 4. Center Logo

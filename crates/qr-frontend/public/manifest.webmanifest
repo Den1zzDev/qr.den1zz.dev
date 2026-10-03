@@ -1,0 +1,9 @@
+{
+  "name": "qr.den1zz.dev",
+  "short_name": "QR Studio",
+  "description": "Local, client-side QR studio built in pure Rust & WebAssembly.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000"
+}

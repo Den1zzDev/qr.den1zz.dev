@@ -1,7 +1,11 @@
+#[cfg(feature = "verifier")]
 use image::{DynamicImage, GenericImageView};
+#[cfg(feature = "verifier")]
 use rqrr::PreparedImage;
+#[cfg(feature = "verifier")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "verifier")]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ScanStatus {
     Verified,
@@ -9,6 +13,7 @@ pub enum ScanStatus {
     Unscannable,
 }
 
+#[cfg(feature = "verifier")]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct VerificationReport {
     pub status: ScanStatus,
@@ -17,8 +22,10 @@ pub struct VerificationReport {
     pub is_contrast_acceptable: bool,
 }
 
+#[cfg(feature = "verifier")]
 pub struct ScanVerifier;
 
+#[cfg(feature = "verifier")]
 impl ScanVerifier {
     pub fn verify(image: &DynamicImage, expected_payload: &str, dark_hex: &str, light_hex: &str) -> VerificationReport {
         let (w, h) = image.dimensions();
