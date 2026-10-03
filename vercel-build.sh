@@ -34,7 +34,7 @@ if [ -d crates/qr-frontend/public ]; then
 fi
 
 echo "==> Compiling Ahead-of-Time minified CSS..."
-npx -y tailwindcss@3 -c crates/qr-frontend/tailwind.config.js -i crates/qr-frontend/input.css --minify -o crates/qr-frontend/dist/style.css
+npx -y tailwindcss@3 -i crates/qr-frontend/input.css --content "./crates/qr-frontend/src/**/*.rs" --minify -o crates/qr-frontend/dist/style.css
 
 echo "==> Compiling client WASM bundle (release mode)..."
 cargo build --release -p qr-frontend --target wasm32-unknown-unknown --features hydrate

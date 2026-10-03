@@ -1,0 +1,4 @@
+# GitHub Linguist language overrides
+# Keep repository language statistics focused on Rust application code
+vercel-build.sh linguist-vendored
+*.css linguist-vendored
