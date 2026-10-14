@@ -6,26 +6,30 @@ Live instance: [qr.den1zz.dev](https://qr.den1zz.dev)
 
 ## Capabilities
 
-- Payload types: Plain text and URLs.
-- Query tracking sanitizer: Inspects URL query strings and strips marketing trackers (`utm_*`, `fbclid`, `gclid`, `mc_eid`, and related tags). This reduces matrix density and prevents tracking parameters from reaching the final code.
-- Module and eye styling:
-  - Modules: Square, Dots, Rounded, Smooth, and Ente Classy.
+- **Payload Types**:
+  - **URL / Link**: Standard hyperlinks with optional tracking parameter stripping (`utm_*`, `fbclid`, `gclid`, `mc_eid`, etc.).
+  - **Plain Text**: Arbitrary raw text, notes, and messages without escaping.
+  - **Wi-Fi Credentials**: Standards-compliant ZXing format (`WIFI:S:...;T:WPA;P:...;;`) with support for WPA/WPA2/WPA3, WEP, unencrypted networks (`nopass`), hidden SSIDs, and automatic character escaping (`\`, `;`, `,`, `:`, `"`).
+  - **vCard 3.0 / 4.0 Contact Cards**: Full contact cards with structured name, company, job title, phone numbers (mobile/work), email, website, address, notes, and standard semicolon/newline escaping.
+  - **Email Drafts**: RFC 6068 `mailto:` links with recipient address, subject line, and multiline prefilled body with RFC 3986 percent-encoding.
+  - **Phone Numbers**: RFC 3966 `tel:` links compatible with native mobile and desktop phone dialers, preserving phone extension parameters (`;ext=`).
+  - **Geolocation Coordinates**: RFC 5870 `geo:` URI standard compatible with Apple Maps and Google Maps, with support for bounded latitude, longitude, and optional search/place labels (`?q=...`).
+  - **Cryptocurrency Payment URIs**: BIP-21 standard URI schemes for Bitcoin (`bitcoin:`), Ethereum (`ethereum:`), Solana (`solana:`), and Litecoin (`litecoin:`) with address, safe float-free normalized amount strings, and optional label/memo.
+- **Module and Eye Styling**:
+  - Modules: Square (with contiguous horizontal run merging), Dots, Rounded, Smooth, and Ente Classy.
   - Eye frames: Square, Rounded, and Circle.
   - Eye dots: Square, Rounded, and Circle.
   - Colors: Independent hex colors for modules, eye frames, eye dots, and background, with transparent background support.
-  - Center logo: Embeds custom logos with an automatic upgrade to high error correction to preserve scan reliability.
-- Scannability validation:
-  - Calculates real-time WCAG contrast ratios between foreground shapes and the background.
-  - Verifies matrix scannability using the `rqrr` QR decoder directly against generated output before export.
-- Export options:
-  - Vector SVG: Download SVG file or copy raw SVG markup to clipboard.
-  - Raster PNG: Export rendered codes at 512x512, 1024x1024, or 2048x2048 resolution with embedded metadata.
-
-## To-do
-
-- [ ] Wi-Fi credentials (WPA, WEP, unencrypted networks, hidden SSID)
-- [ ] vCard contact cards
-- [ ] Email drafts (`mailto:` links with subject and body prefill)
+  - Center logo: Embeds custom PNG/SVG logos with automatic error correction boost to Level H.
+- **Scannability Validation**:
+  - Real-time WCAG contrast ratio calculations for module, eye frame, and eye dot against background.
+  - In-browser scan verifier using the `rqrr` engine directly against generated matrices before export.
+- **Export Options**:
+  - Raster PNG: 512×512, 1024×1024, or 2048×2048 resolution with embedded tEXt metadata chunks.
+  - Direct PNG Clipboard Copy: Clipboard copy via Async Clipboard API (`navigator.clipboard.write`).
+  - Vector SVG: Standalone SVG download or raw SVG markup clipboard copy.
+- **Offline PWA**:
+  - Service Worker (`sw.js`) with 2500ms network-first fallback and Web Application Manifest (`manifest.webmanifest`) for offline functionality and desktop/mobile installation.
 
 ## Workspace layout
 

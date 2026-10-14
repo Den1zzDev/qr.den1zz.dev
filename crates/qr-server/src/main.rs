@@ -331,10 +331,19 @@ async fn verify_image(
 
     let img_bytes = base64::engine::general_purpose::STANDARD
         .decode(raw_b64)
-        .map_err(|e| (StatusCode::BAD_REQUEST, format!("Invalid base64 image: {e}")))?;
+        .map_err(|e| {
+            (
+                StatusCode::BAD_REQUEST,
+                format!("Invalid base64 image: {e}"),
+            )
+        })?;
 
-    let dyn_img = image::load_from_memory(&img_bytes)
-        .map_err(|e| (StatusCode::BAD_REQUEST, format!("Failed to decode image: {e}")))?;
+    let dyn_img = image::load_from_memory(&img_bytes).map_err(|e| {
+        (
+            StatusCode::BAD_REQUEST,
+            format!("Failed to decode image: {e}"),
+        )
+    })?;
 
     let dark_hex = req.dark_color.as_deref().unwrap_or("#000000");
     let light_hex = req.light_color.as_deref().unwrap_or("#FFFFFF");
@@ -346,7 +355,9 @@ async fn verify_image(
 #[tokio::main]
 async fn main() {
     tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()))
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
+        )
         .with(tracing_subscriber::fmt::layer())
         .init();
 

@@ -2,3 +2,7 @@
 # Keep repository language statistics focused on Rust application code
 vercel-build.sh linguist-vendored
 *.css linguist-vendored
+*.js linguist-vendored
+*.js linguist-generated=true
+crates/qr-frontend/public/** linguist-vendored
+crates/qr-frontend/public/** linguist-generated=true

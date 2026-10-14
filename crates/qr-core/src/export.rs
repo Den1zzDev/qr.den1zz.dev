@@ -36,6 +36,86 @@ impl PngExporter {
         Ok(png_bytes)
     }
 
+    /// Rasterizes a QrMatrix into an RgbaImage using fast slice fills for horizontal runs
+    pub fn rasterize_matrix(
+        matrix: &crate::matrix::QrMatrix,
+        resolution: u32,
+        dark_rgba: [u8; 4],
+        light_rgba: [u8; 4],
+        margin_modules: usize,
+    ) -> image::RgbaImage {
+        let total_modules = matrix.size + margin_modules * 2;
+        let mut img = image::RgbaImage::new(resolution, resolution);
+
+        let raw_pixels = img.as_mut();
+        // Fast fill entire background with light_rgba
+        if light_rgba[0] == light_rgba[1]
+            && light_rgba[1] == light_rgba[2]
+            && light_rgba[2] == light_rgba[3]
+        {
+            raw_pixels.fill(light_rgba[0]);
+        } else {
+            for chunk in raw_pixels.as_chunks_mut::<4>().0 {
+                chunk.copy_from_slice(&light_rgba);
+            }
+        }
+
+        if matrix.size == 0 || resolution == 0 || total_modules == 0 {
+            return img;
+        }
+
+        let scale = resolution as f64 / total_modules as f64;
+        let row_stride = (resolution as usize) * 4;
+
+        for my in 0..matrix.size {
+            let py_start = ((my + margin_modules) as f64 * scale).round() as usize;
+            let py_end = (((my + margin_modules + 1) as f64 * scale).round() as usize)
+                .min(resolution as usize);
+            if py_start >= py_end {
+                continue;
+            }
+
+            let mut mx = 0;
+            while mx < matrix.size {
+                if matrix.is_dark(mx, my) {
+                    let run_start = mx;
+                    while mx < matrix.size && matrix.is_dark(mx, my) {
+                        mx += 1;
+                    }
+                    let run_end = mx;
+
+                    let px_start = ((run_start + margin_modules) as f64 * scale).round() as usize;
+                    let px_end = (((run_end + margin_modules) as f64 * scale).round() as usize)
+                        .min(resolution as usize);
+
+                    if px_start < px_end {
+                        let byte_start = px_start * 4;
+                        let byte_end = px_end * 4;
+
+                        for py in py_start..py_end {
+                            let row_slice = &mut raw_pixels
+                                [py * row_stride + byte_start..py * row_stride + byte_end];
+                            if dark_rgba[0] == dark_rgba[1]
+                                && dark_rgba[1] == dark_rgba[2]
+                                && dark_rgba[2] == dark_rgba[3]
+                            {
+                                row_slice.fill(dark_rgba[0]);
+                            } else {
+                                for pixel_chunk in row_slice.as_chunks_mut::<4>().0 {
+                                    pixel_chunk.copy_from_slice(&dark_rgba);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    mx += 1;
+                }
+            }
+        }
+
+        img
+    }
+
     pub fn insert_text_chunk(png_bytes: &[u8], keyword: &str, text: &str) -> Vec<u8> {
         if png_bytes.len() < 33 {
             return png_bytes.to_vec();
@@ -86,5 +166,23 @@ mod tests {
         assert!(png.starts_with(b"\x89PNG\r\n\x1a\n"));
         // Check for 'tEXt'
         assert!(png.windows(4).any(|w| w == b"tEXt"));
+    }
+
+    #[test]
+    fn test_rasterize_matrix_resolutions() {
+        let matrix =
+            crate::matrix::QrMatrix::new("https://den1zz.dev", crate::matrix::EccLevel::M, false)
+                .unwrap();
+        for &res in &[512, 1024, 2048] {
+            let img = PngExporter::rasterize_matrix(
+                &matrix,
+                res,
+                [0, 0, 0, 255],
+                [255, 255, 255, 255],
+                2,
+            );
+            assert_eq!(img.width(), res);
+            assert_eq!(img.height(), res);
+        }
     }
 }

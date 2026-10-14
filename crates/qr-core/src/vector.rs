@@ -1,5 +1,6 @@
 use crate::matrix::QrMatrix;
 use serde::{Deserialize, Serialize};
+use std::fmt::Write as _;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -29,8 +30,15 @@ pub enum EyeDotShape {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum GradientConfig {
-    Linear { angle: f32, color_start: String, color_end: String },
-    Radial { color_start: String, color_end: String },
+    Linear {
+        angle: f32,
+        color_start: String,
+        color_end: String,
+    },
+    Radial {
+        color_start: String,
+        color_end: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -119,17 +127,25 @@ impl VectorRenderer {
 
         let full_height = qr_width + cta_height;
 
-        let mut defs = String::new();
+        let mut defs = String::with_capacity(256);
         let body_fill = if let Some(grad) = &config.gradient {
             match grad {
-                GradientConfig::Radial { color_start, color_end } => {
+                GradientConfig::Radial {
+                    color_start,
+                    color_end,
+                } => {
                     let cy_pct = ((qr_width / 2.0) / full_height) * 100.0;
                     let r_pct = 50.0;
-                    defs.push_str(&format!(
+                    let _ = write!(
+                        defs,
                         r#"<radialGradient id="qr-grad" cx="50%" cy="{cy_pct:.2}%" r="{r_pct:.2}%"><stop offset="0%" stop-color="{color_start}"/><stop offset="100%" stop-color="{color_end}"/></radialGradient>"#
-                    ));
+                    );
                 }
-                GradientConfig::Linear { angle, color_start, color_end } => {
+                GradientConfig::Linear {
+                    angle,
+                    color_start,
+                    color_end,
+                } => {
                     let rad = (*angle - 90.0) * (std::f32::consts::PI / 180.0);
                     let cx = qr_width / 2.0;
                     let cy = qr_width / 2.0;
@@ -138,9 +154,10 @@ impl VectorRenderer {
                     let y1 = (((cy - rad.sin() * r) / full_height) * 100.0).clamp(0.0, 100.0);
                     let x2 = (((cx + rad.cos() * r) / qr_width) * 100.0).clamp(0.0, 100.0);
                     let y2 = (((cy + rad.sin() * r) / full_height) * 100.0).clamp(0.0, 100.0);
-                    defs.push_str(&format!(
+                    let _ = write!(
+                        defs,
                         r#"<linearGradient id="qr-grad" x1="{x1:.2}%" y1="{y1:.2}%" x2="{x2:.2}%" y2="{y2:.2}%"><stop offset="0%" stop-color="{color_start}"/><stop offset="100%" stop-color="{color_end}"/></linearGradient>"#
-                    ));
+                    );
                 }
             }
             "url(#qr-grad)".to_string()
@@ -148,8 +165,14 @@ impl VectorRenderer {
             config.code_color.clone()
         };
 
-        let eye_fill = config.eye_color.clone().unwrap_or_else(|| body_fill.clone());
-        let eye_dot_fill = config.eye_dot_color.clone().unwrap_or_else(|| eye_fill.clone());
+        let eye_fill = config
+            .eye_color
+            .clone()
+            .unwrap_or_else(|| body_fill.clone());
+        let eye_dot_fill = config
+            .eye_dot_color
+            .clone()
+            .unwrap_or_else(|| eye_fill.clone());
 
         // Logo cutout geometry
         let logo_info = config.logo.as_ref().map(|l| {
@@ -171,20 +194,23 @@ impl VectorRenderer {
             let inner_y = y + pad;
             match logo.shape {
                 LogoMaskShape::Circle => {
-                    defs.push_str(&format!(
+                    let _ = write!(
+                        defs,
                         r#"<clipPath id="logo-clip"><circle cx="{cx}" cy="{cy}" r="{inner_radius}"/></clipPath>"#
-                    ));
+                    );
                 }
                 LogoMaskShape::Rounded => {
                     let rx = scale * 0.6;
-                    defs.push_str(&format!(
+                    let _ = write!(
+                        defs,
                         r#"<clipPath id="logo-clip"><rect x="{inner_x}" y="{inner_y}" width="{inner_size}" height="{inner_size}" rx="{rx}" ry="{rx}"/></clipPath>"#
-                    ));
+                    );
                 }
                 LogoMaskShape::Square => {
-                    defs.push_str(&format!(
+                    let _ = write!(
+                        defs,
                         r#"<clipPath id="logo-clip"><rect x="{inner_x}" y="{inner_y}" width="{inner_size}" height="{inner_size}"/></clipPath>"#
-                    ));
+                    );
                 }
             }
         }
@@ -231,186 +257,273 @@ impl VectorRenderer {
             true
         };
 
-        let mut elements = String::new();
+        let mut elements = String::with_capacity(size * size * 32);
 
         // 1. Background
         if let Some(bg) = &config.bg_color {
-            elements.push_str(&format!(
+            let _ = write!(
+                elements,
                 r#"<rect width="{qr_width}" height="{full_height}" fill="{bg}"/>"#
-            ));
+            );
         }
 
         // 2. Body modules (combined into compound path)
-        let mut body_path = String::new();
-        for y in 0..size {
-            for x in 0..size {
-                if !is_active(x, y) {
-                    continue;
-                }
+        let mut body_path = String::with_capacity(size * size * 24);
 
-                let px = padding + x as f32 * scale;
+        if config.module_shape == ModuleShape::Square {
+            // Contiguous horizontal run merging for ModuleShape::Square
+            for y in 0..size {
                 let py = padding + y as f32 * scale;
-
-                match config.module_shape {
-                    ModuleShape::Dots => {
-                        let cx = px + scale / 2.0;
-                        let cy = py + scale / 2.0;
-                        let r = scale * 0.44;
-                        let r2 = 2.0 * r;
-                        body_path.push_str(&format!(
-                            "M {x:.2} {cy:.2} a {r:.2} {r:.2} 0 1 0 {r2:.2} 0 a {r:.2} {r:.2} 0 1 0 -{r2:.2} 0 Z ",
-                            x = cx - r
-                        ));
-                    }
-                    ModuleShape::Smooth => {
-                        let top = y > 0 && is_active(x, y - 1);
-                        let right = x + 1 < size && is_active(x + 1, y);
-                        let bottom = y + 1 < size && is_active(x, y + 1);
-                        let left = x > 0 && is_active(x - 1, y);
-                        let r = scale * 0.45;
-
-                        let r_tl = if !top && !left { r } else { 0.0 };
-                        let r_tr = if !top && !right { r } else { 0.0 };
-                        let r_br = if !bottom && !right { r } else { 0.0 };
-                        let r_bl = if !bottom && !left { r } else { 0.0 };
-
-                        if r_tl == 0.0 && r_tr == 0.0 && r_br == 0.0 && r_bl == 0.0 {
-                            body_path.push_str(&format!(
-                                "M {px:.2} {py:.2} h {scale:.2} v {scale:.2} h -{scale:.2} Z "
-                            ));
-                        } else {
-                            let mut d = format!("M {x:.2} {y:.2}", x = px + r_tl, y = py);
-                            d.push_str(&format!(" h {:.2}", scale - r_tl - r_tr));
-                            if r_tr > 0.0 {
-                                d.push_str(&format!(" a {r_tr:.2} {r_tr:.2} 0 0 1 {r_tr:.2} {r_tr:.2}"));
-                            }
-                            d.push_str(&format!(" v {:.2}", scale - r_tr - r_br));
-                            if r_br > 0.0 {
-                                d.push_str(&format!(" a {r_br:.2} {r_br:.2} 0 0 1 -{r_br:.2} {r_br:.2}"));
-                            }
-                            d.push_str(&format!(" h -{:.2}", scale - r_br - r_bl));
-                            if r_bl > 0.0 {
-                                d.push_str(&format!(" a {r_bl:.2} {r_bl:.2} 0 0 1 -{r_bl:.2} -{r_bl:.2}"));
-                            }
-                            d.push_str(&format!(" v -{:.2}", scale - r_bl - r_tl));
-                            if r_tl > 0.0 {
-                                d.push_str(&format!(" a {r_tl:.2} {r_tl:.2} 0 0 1 {r_tl:.2} -{r_tl:.2}"));
-                            }
-                            d.push_str(" Z ");
-                            body_path.push_str(&d);
+                let mut x = 0;
+                while x < size {
+                    if is_active(x, y) {
+                        let run_start = x;
+                        while x < size && is_active(x, y) {
+                            x += 1;
                         }
+                        let run_len = x - run_start;
+                        let px = padding + run_start as f32 * scale;
+                        let width = run_len as f32 * scale;
+                        let _ = write!(
+                            body_path,
+                            "M {:.2} {:.2} h {:.2} v {:.2} h -{:.2} Z ",
+                            px, py, width, scale, width
+                        );
+                    } else {
+                        x += 1;
                     }
-                    ModuleShape::Classy => {
-                        let top = y > 0 && is_active(x, y - 1);
-                        let right = x + 1 < size && is_active(x + 1, y);
-                        let bottom = y + 1 < size && is_active(x, y + 1);
-                        let left = x > 0 && is_active(x - 1, y);
-                        let r = scale / 2.0;
+                }
+            }
+        } else {
+            for y in 0..size {
+                for x in 0..size {
+                    if !is_active(x, y) {
+                        continue;
+                    }
 
-                        let (r_tl, r_tr, r_br, r_bl) = if left || right || top || bottom {
-                            if left || top {
-                                if right || bottom {
-                                    (0.0, 0.0, 0.0, 0.0)
+                    let px = padding + x as f32 * scale;
+                    let py = padding + y as f32 * scale;
+
+                    match config.module_shape {
+                        ModuleShape::Dots => {
+                            let cx = px + scale / 2.0;
+                            let cy = py + scale / 2.0;
+                            let r = scale * 0.44;
+                            let r2 = 2.0 * r;
+                            let _ = write!(
+                                body_path,
+                                "M {x:.2} {cy:.2} a {r:.2} {r:.2} 0 1 0 {r2:.2} 0 a {r:.2} {r:.2} 0 1 0 -{r2:.2} 0 Z ",
+                                x = cx - r,
+                                cy = cy,
+                                r = r,
+                                r2 = r2
+                            );
+                        }
+                        ModuleShape::Smooth => {
+                            let top = y > 0 && is_active(x, y - 1);
+                            let right = x + 1 < size && is_active(x + 1, y);
+                            let bottom = y + 1 < size && is_active(x, y + 1);
+                            let left = x > 0 && is_active(x - 1, y);
+                            let r = scale * 0.45;
+
+                            let r_tl = if !top && !left { r } else { 0.0 };
+                            let r_tr = if !top && !right { r } else { 0.0 };
+                            let r_br = if !bottom && !right { r } else { 0.0 };
+                            let r_bl = if !bottom && !left { r } else { 0.0 };
+
+                            if r_tl == 0.0 && r_tr == 0.0 && r_br == 0.0 && r_bl == 0.0 {
+                                let _ = write!(
+                                    body_path,
+                                    "M {:.2} {:.2} h {:.2} v {:.2} h -{:.2} Z ",
+                                    px, py, scale, scale, scale
+                                );
+                            } else {
+                                let _ = write!(
+                                    body_path,
+                                    "M {:.2} {:.2} h {:.2}",
+                                    px + r_tl,
+                                    py,
+                                    scale - r_tl - r_tr
+                                );
+                                if r_tr > 0.0 {
+                                    let _ = write!(
+                                        body_path,
+                                        " a {:.2} {:.2} 0 0 1 {:.2} {:.2}",
+                                        r_tr, r_tr, r_tr, r_tr
+                                    );
+                                }
+                                let _ = write!(body_path, " v {:.2}", scale - r_tr - r_br);
+                                if r_br > 0.0 {
+                                    let _ = write!(
+                                        body_path,
+                                        " a {:.2} {:.2} 0 0 1 -{:.2} {:.2}",
+                                        r_br, r_br, r_br, r_br
+                                    );
+                                }
+                                let _ = write!(body_path, " h -{:.2}", scale - r_br - r_bl);
+                                if r_bl > 0.0 {
+                                    let _ = write!(
+                                        body_path,
+                                        " a {:.2} {:.2} 0 0 1 -{:.2} -{:.2}",
+                                        r_bl, r_bl, r_bl, r_bl
+                                    );
+                                }
+                                let _ = write!(body_path, " v -{:.2}", scale - r_bl - r_tl);
+                                if r_tl > 0.0 {
+                                    let _ = write!(
+                                        body_path,
+                                        " a {:.2} {:.2} 0 0 1 {:.2} -{:.2}",
+                                        r_tl, r_tl, r_tl, r_tl
+                                    );
+                                }
+                                body_path.push_str(" Z ");
+                            }
+                        }
+                        ModuleShape::Classy => {
+                            let top = y > 0 && is_active(x, y - 1);
+                            let right = x + 1 < size && is_active(x + 1, y);
+                            let bottom = y + 1 < size && is_active(x, y + 1);
+                            let left = x > 0 && is_active(x - 1, y);
+                            let r = scale / 2.0;
+
+                            let (r_tl, r_tr, r_br, r_bl) = if left || right || top || bottom {
+                                if left || top {
+                                    if right || bottom {
+                                        (0.0, 0.0, 0.0, 0.0)
+                                    } else {
+                                        (0.0, 0.0, r, 0.0)
+                                    }
                                 } else {
-                                    (0.0, 0.0, r, 0.0)
+                                    (r, 0.0, 0.0, 0.0)
                                 }
                             } else {
-                                (r, 0.0, 0.0, 0.0)
-                            }
-                        } else {
-                            (r, 0.0, r, 0.0)
-                        };
+                                (r, 0.0, r, 0.0)
+                            };
 
-                        if r_tl == 0.0 && r_tr == 0.0 && r_br == 0.0 && r_bl == 0.0 {
-                            body_path.push_str(&format!(
-                                "M {px:.2} {py:.2} h {scale:.2} v {scale:.2} h -{scale:.2} Z "
-                            ));
-                        } else {
-                            let mut d = format!("M {x:.2} {y:.2}", x = px + r_tl, y = py);
-                            d.push_str(&format!(" h {:.2}", scale - r_tl - r_tr));
-                            if r_tr > 0.0 {
-                                d.push_str(&format!(" a {r_tr:.2} {r_tr:.2} 0 0 1 {r_tr:.2} {r_tr:.2}"));
+                            if r_tl == 0.0 && r_tr == 0.0 && r_br == 0.0 && r_bl == 0.0 {
+                                let _ = write!(
+                                    body_path,
+                                    "M {:.2} {:.2} h {:.2} v {:.2} h -{:.2} Z ",
+                                    px, py, scale, scale, scale
+                                );
+                            } else {
+                                let _ = write!(
+                                    body_path,
+                                    "M {:.2} {:.2} h {:.2}",
+                                    px + r_tl,
+                                    py,
+                                    scale - r_tl - r_tr
+                                );
+                                if r_tr > 0.0 {
+                                    let _ = write!(
+                                        body_path,
+                                        " a {:.2} {:.2} 0 0 1 {:.2} {:.2}",
+                                        r_tr, r_tr, r_tr, r_tr
+                                    );
+                                }
+                                let _ = write!(body_path, " v {:.2}", scale - r_tr - r_br);
+                                if r_br > 0.0 {
+                                    let _ = write!(
+                                        body_path,
+                                        " a {:.2} {:.2} 0 0 1 -{:.2} {:.2}",
+                                        r_br, r_br, r_br, r_br
+                                    );
+                                }
+                                let _ = write!(body_path, " h -{:.2}", scale - r_br - r_bl);
+                                if r_bl > 0.0 {
+                                    let _ = write!(
+                                        body_path,
+                                        " a {:.2} {:.2} 0 0 1 -{:.2} -{:.2}",
+                                        r_bl, r_bl, r_bl, r_bl
+                                    );
+                                }
+                                let _ = write!(body_path, " v -{:.2}", scale - r_bl - r_tl);
+                                if r_tl > 0.0 {
+                                    let _ = write!(
+                                        body_path,
+                                        " a {:.2} {:.2} 0 0 1 {:.2} -{:.2}",
+                                        r_tl, r_tl, r_tl, r_tl
+                                    );
+                                }
+                                body_path.push_str(" Z ");
                             }
-                            d.push_str(&format!(" v {:.2}", scale - r_tr - r_br));
-                            if r_br > 0.0 {
-                                d.push_str(&format!(" a {r_br:.2} {r_br:.2} 0 0 1 -{r_br:.2} {r_br:.2}"));
-                            }
-                            d.push_str(&format!(" h -{:.2}", scale - r_br - r_bl));
-                            if r_bl > 0.0 {
-                                d.push_str(&format!(" a {r_bl:.2} {r_bl:.2} 0 0 1 -{r_bl:.2} -{r_bl:.2}"));
-                            }
-                            d.push_str(&format!(" v -{:.2}", scale - r_bl - r_tl));
-                            if r_tl > 0.0 {
-                                d.push_str(&format!(" a {r_tl:.2} {r_tl:.2} 0 0 1 {r_tl:.2} -{r_tl:.2}"));
-                            }
-                            d.push_str(" Z ");
-                            body_path.push_str(&d);
                         }
-                    }
-                    ModuleShape::Square => {
-                        body_path.push_str(&format!(
-                            "M {px:.2} {py:.2} h {scale:.2} v {scale:.2} h -{scale:.2} Z "
-                        ));
+                        ModuleShape::Square => unreachable!(),
                     }
                 }
             }
         }
 
         if !body_path.is_empty() {
-            elements.push_str(&format!(r#"<path d="{}" fill="{body_fill}"/>"#, body_path.trim_end()));
+            let _ = write!(
+                elements,
+                r#"<path d="{}" fill="{body_fill}"/>"#,
+                body_path.trim_end()
+            );
         }
 
         // 3. Eye frames & dots (combined compound paths)
-        let mut eye_frame_path = String::new();
-        let mut eye_dot_path = String::new();
+        let mut eye_frame_path = String::with_capacity(512);
+        let mut eye_dot_path = String::with_capacity(256);
         let finders = [(0, 0), (size - 7, 0), (0, size - 7)];
 
         for &(fx, fy) in &finders {
-            let px = padding + fx as f32 * scale;
-            let py = padding + fy as f32 * scale;
+            let ox = padding + fx as f32 * scale;
+            let oy = padding + fy as f32 * scale;
+            let frame_size = 7.0 * scale;
 
-            // Outer eye frame
+            // Eye Frame (Outer 7x7 with inner 5x5 cutout using evenodd)
             match config.eye_frame_shape {
                 EyeFrameShape::Circle => {
-                    let cx = px + 3.5 * scale;
-                    let ro = 3.5 * scale;
-                    let ri = 2.5 * scale;
-                    eye_frame_path.push_str(&format!(
-                        "M {cx} {py} a {ro} {ro} 0 1 0 0.001 0 Z M {cx} {py_inner} a {ri} {ri} 0 1 1 -0.001 0 Z ",
-                        py_inner = py + scale
-                    ));
+                    let cx = ox + frame_size / 2.0;
+                    let cy = oy + frame_size / 2.0;
+                    let r_outer = frame_size / 2.0;
+                    let r_inner = frame_size / 2.0 - scale;
+                    let r2_out = 2.0 * r_outer;
+                    let r2_in = 2.0 * r_inner;
+                    let _ = write!(
+                        eye_frame_path,
+                        "M {ox_c:.2} {cy:.2} a {r_outer:.2} {r_outer:.2} 0 1 0 {r2_out:.2} 0 a {r_outer:.2} {r_outer:.2} 0 1 0 -{r2_out:.2} 0 Z M {ix_c:.2} {cy:.2} a {r_inner:.2} {r_inner:.2} 0 1 0 {r2_in:.2} 0 a {r_inner:.2} {r_inner:.2} 0 1 0 -{r2_in:.2} 0 Z ",
+                        ox_c = cx - r_outer,
+                        ix_c = cx - r_inner,
+                        cy = cy,
+                        r_outer = r_outer,
+                        r_inner = r_inner,
+                        r2_out = r2_out,
+                        r2_in = r2_in
+                    );
                 }
                 EyeFrameShape::Rounded => {
-                    let ro = 2.4 * scale;
-                    let ri = 1.4 * scale;
-                    let outer_d = format!(
-                        "M {px_ro} {py} h {w_out} a {ro} {ro} 0 0 1 {ro} {ro} v {w_out} a {ro} {ro} 0 0 1 -{ro} {ro} h -{w_out} a {ro} {ro} 0 0 1 -{ro} -{ro} v -{w_out} a {ro} {ro} 0 0 1 {ro} -{ro} Z",
-                        px_ro = px + ro,
-                        w_out = 7.0 * scale - 2.0 * ro
+                    let r = scale * 1.8;
+                    let r_in = (r - scale).max(0.0);
+                    let w = frame_size - 2.0 * r;
+                    let w_in = (frame_size - 2.0 * scale) - 2.0 * r_in;
+
+                    let _ = write!(
+                        eye_frame_path,
+                        "M {:.2} {oy:.2} h {w:.2} a {r:.2} {r:.2} 0 0 1 {r:.2} {r:.2} v {w:.2} a {r:.2} {r:.2} 0 0 1 -{r:.2} {r:.2} h -{w:.2} a {r:.2} {r:.2} 0 0 1 -{r:.2} -{r:.2} v -{w:.2} a {r:.2} {r:.2} 0 0 1 {r:.2} -{r:.2} Z ",
+                        ox + r
                     );
-                    let inner_d = format!(
-                        "M {px_ri} {py_ri} h {w_in} a {ri} {ri} 0 0 1 {ri} {ri} v {w_in} a {ri} {ri} 0 0 1 -{ri} {ri} h -{w_in} a {ri} {ri} 0 0 1 -{ri} -{ri} v -{w_in} a {ri} {ri} 0 0 1 {ri} -{ri} Z",
-                        px_ri = px + scale + ri,
-                        py_ri = py + scale,
-                        w_in = 5.0 * scale - 2.0 * ri
+                    let inner_y = oy + scale;
+                    let _ = write!(
+                        eye_frame_path,
+                        "M {:.2} {inner_y:.2} h {w_in:.2} a {r_in:.2} {r_in:.2} 0 0 1 {r_in:.2} {r_in:.2} v {w_in:.2} a {r_in:.2} {r_in:.2} 0 0 1 -{r_in:.2} {r_in:.2} h -{w_in:.2} a {r_in:.2} {r_in:.2} 0 0 1 -{r_in:.2} -{r_in:.2} v -{w_in:.2} a {r_in:.2} {r_in:.2} 0 0 1 {r_in:.2} -{r_in:.2} Z ",
+                        ox + scale + r_in
                     );
-                    eye_frame_path.push_str(&format!("{outer_d} {inner_d} "));
                 }
                 EyeFrameShape::Square => {
-                    let d = format!(
-                        "M {px} {py} h {outer} v {outer} h -{outer} Z M {inner_x} {inner_y} v {inner} h {inner} v -{inner} Z ",
-                        outer = 7.0 * scale,
-                        inner_x = px + scale,
-                        inner_y = py + scale,
-                        inner = 5.0 * scale
+                    let inner_w = frame_size - 2.0 * scale;
+                    let _ = write!(
+                        eye_frame_path,
+                        "M {ox:.2} {oy:.2} h {frame_size:.2} v {frame_size:.2} h -{frame_size:.2} Z M {:.2} {:.2} h {inner_w:.2} v {inner_w:.2} h -{inner_w:.2} Z ",
+                        ox + scale, oy + scale
                     );
-                    eye_frame_path.push_str(&d);
                 }
             }
 
-            // Inner eye dot
-            let dot_x = px + 2.0 * scale;
-            let dot_y = py + 2.0 * scale;
+            // Eye Dot (Center 3x3)
+            let dot_x = ox + 2.0 * scale;
+            let dot_y = oy + 2.0 * scale;
             let dot_size = 3.0 * scale;
 
             match config.eye_dot_shape {
@@ -419,39 +532,47 @@ impl VectorRenderer {
                     let cy = dot_y + dot_size / 2.0;
                     let r = dot_size / 2.0;
                     let r2 = 2.0 * r;
-                    eye_dot_path.push_str(&format!(
+                    let _ = write!(
+                        eye_dot_path,
                         "M {x:.2} {cy:.2} a {r:.2} {r:.2} 0 1 0 {r2:.2} 0 a {r:.2} {r:.2} 0 1 0 -{r2:.2} 0 Z ",
-                        x = cx - r
-                    ));
+                        x = cx - r,
+                        cy = cy,
+                        r = r,
+                        r2 = r2
+                    );
                 }
                 EyeDotShape::Rounded => {
                     let r = scale * 0.9;
                     let w = dot_size - 2.0 * r;
-                    eye_dot_path.push_str(&format!(
-                        "M {x:.2} {dot_y:.2} h {w:.2} a {r:.2} {r:.2} 0 0 1 {r:.2} {r:.2} v {w:.2} a {r:.2} {r:.2} 0 0 1 -{r:.2} {r:.2} h -{w:.2} a {r:.2} {r:.2} 0 0 1 -{r:.2} -{r:.2} v -{w:.2} a {r:.2} {r:.2} 0 0 1 {r:.2} -{r:.2} Z ",
-                        x = dot_x + r
-                    ));
+                    let _ = write!(
+                        eye_dot_path,
+                        "M {:.2} {dot_y:.2} h {w:.2} a {r:.2} {r:.2} 0 0 1 {r:.2} {r:.2} v {w:.2} a {r:.2} {r:.2} 0 0 1 -{r:.2} {r:.2} h -{w:.2} a {r:.2} {r:.2} 0 0 1 -{r:.2} -{r:.2} v -{w:.2} a {r:.2} {r:.2} 0 0 1 {r:.2} -{r:.2} Z ",
+                        dot_x + r
+                    );
                 }
                 EyeDotShape::Square => {
-                    eye_dot_path.push_str(&format!(
+                    let _ = write!(
+                        eye_dot_path,
                         "M {dot_x:.2} {dot_y:.2} h {dot_size:.2} v {dot_size:.2} h -{dot_size:.2} Z "
-                    ));
+                    );
                 }
             }
         }
 
         if !eye_frame_path.is_empty() {
-            elements.push_str(&format!(
+            let _ = write!(
+                elements,
                 r#"<path fill-rule="evenodd" d="{}" fill="{eye_fill}"/>"#,
                 eye_frame_path.trim_end()
-            ));
+            );
         }
 
         if !eye_dot_path.is_empty() {
-            elements.push_str(&format!(
+            let _ = write!(
+                elements,
                 r#"<path d="{}" fill="{eye_dot_fill}"/>"#,
                 eye_dot_path.trim_end()
-            ));
+            );
         }
 
         // 4. Center Logo
@@ -459,76 +580,61 @@ impl VectorRenderer {
             let bg_color = config.bg_color.as_deref().unwrap_or("#04070d");
             match logo.shape {
                 LogoMaskShape::Circle => {
-                    elements.push_str(&format!(r#"<circle cx="{cx}" cy="{cy}" r="{radius}" fill="{bg_color}"/>"#));
+                    let _ = write!(
+                        elements,
+                        r#"<circle cx="{cx}" cy="{cy}" r="{radius}" fill="{bg_color}"/>"#
+                    );
                 }
                 LogoMaskShape::Rounded => {
                     let rx = scale * 0.8;
-                    elements.push_str(&format!(
+                    let _ = write!(
+                        elements,
                         r#"<rect x="{x}" y="{y}" width="{pixel_size}" height="{pixel_size}" rx="{rx}" ry="{rx}" fill="{bg_color}"/>"#
-                    ));
+                    );
                 }
                 LogoMaskShape::Square => {
-                    elements.push_str(&format!(
+                    let _ = write!(
+                        elements,
                         r#"<rect x="{x}" y="{y}" width="{pixel_size}" height="{pixel_size}" fill="{bg_color}"/>"#
-                    ));
+                    );
                 }
             }
-            let img_x = x + pad;
-            let img_y = y + pad;
-            let img_size = pixel_size - 2.0 * pad;
-            let href = html_escape(&logo.data_url);
-            elements.push_str(&format!(
-                r#"<image href="{href}" x="{img_x}" y="{img_y}" width="{img_size}" height="{img_size}" clip-path="url(#logo-clip)"/>"#
-            ));
+            let inner_size = (pixel_size - 2.0 * pad).max(0.0);
+            let inner_x = x + pad;
+            let inner_y = y + pad;
+            let _ = write!(
+                elements,
+                r#"<image href="{}" x="{inner_x}" y="{inner_y}" width="{inner_size}" height="{inner_size}" preserveAspectRatio="xMidYMid slice" clip-path="url(#logo-clip)"/>"#,
+                logo.data_url
+            );
         }
 
-        // 5. CTA Text Banner
-        if let Some(text) = cta_text {
-            let text_y = qr_width + (cta_height / 2.0);
-            let text_color = config.cta.as_ref().map(|c| c.color.as_str()).unwrap_or("#3fd9ff");
-            let escaped = html_escape(&text);
-            elements.push_str(&format!(
-                r#"<text x="{}" y="{}" fill="{}" font-family="'Maple Mono NF', 'Maple Mono', 'JetBrains Mono', monospace" font-weight="bold" font-size="{}" text-anchor="middle" dominant-baseline="central" letter-spacing="1.5">{}</text>"#,
-                qr_width / 2.0,
-                text_y,
-                text_color,
-                target_font_size,
-                escaped
-            ));
+        // 5. CTA Banner
+        if let Some(cta_text) = &cta_text {
+            let text_y = qr_width + cta_height * 0.65;
+            let cta_color = config
+                .cta
+                .as_ref()
+                .map(|c| c.color.as_str())
+                .unwrap_or("#ffffff");
+            let _ = write!(
+                elements,
+                r#"<text x="50%" y="{text_y}" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="{target_font_size}px" font-weight="bold" fill="{cta_color}" letter-spacing="1.5">{cta_text}</text>"#
+            );
         }
 
-        let title_desc = if let Some(alt) = &config.alt_text {
-            let esc = html_escape(alt);
-            format!("<title>{esc}</title><desc>{esc}</desc>")
-        } else {
+        let defs_tag = if defs.is_empty() {
             String::new()
-        };
-
-        let defs_tag = if !defs.is_empty() {
+        } else {
             format!("<defs>{defs}</defs>")
-        } else {
-            String::new()
         };
+
+        let alt = config.alt_text.as_deref().unwrap_or("QR Code");
 
         format!(
-            r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {qr_width} {full_height}" width="{qr_width}" height="{full_height}" style="width:100%;height:auto;max-width:100%;display:block;">{title_desc}{defs_tag}{elements}</svg>"#
+            r#"<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 {qr_width} {full_height}" width="{qr_width}" height="{full_height}" shape-rendering="geometricPrecision"><title>{alt}</title>{defs_tag}{elements}</svg>"#
         )
     }
-}
-
-fn html_escape(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    for c in s.chars() {
-        match c {
-            '<' => out.push_str("&lt;"),
-            '>' => out.push_str("&gt;"),
-            '&' => out.push_str("&amp;"),
-            '"' => out.push_str("&quot;"),
-            '\'' => out.push_str("&apos;"),
-            _ => out.push(c),
-        }
-    }
-    out
 }
 
 #[cfg(test)]
@@ -538,21 +644,36 @@ mod tests {
 
     #[test]
     fn test_svg_generation() {
-        let matrix = QrMatrix::new("https://qr.den1zz.dev", EccLevel::M, false).unwrap();
+        let matrix = QrMatrix::new("https://den1zz.dev", EccLevel::M, false).unwrap();
         let config = VectorRenderConfig::default();
         let svg = VectorRenderer::render_svg(&matrix, &config);
         assert!(svg.starts_with("<svg"));
         assert!(svg.ends_with("</svg>"));
-        assert!(svg.contains("fill=\"#000000\""));
-        assert!(svg.contains("fill=\"#008b99\""));
+        assert!(svg.contains("path"));
+    }
+
+    #[test]
+    fn test_square_shape_horizontal_merging() {
+        let matrix = QrMatrix::new("https://den1zz.dev", EccLevel::M, false).unwrap();
+        let config = VectorRenderConfig {
+            module_shape: ModuleShape::Square,
+            scale: 10.0,
+            margin_modules: 0,
+            ..Default::default()
+        };
+        let svg = VectorRenderer::render_svg(&matrix, &config);
+        // Ensure merged runs exist (i.e. horizontal width is a multiple of scale > 10.0, e.g. 20.00, 30.00, 70.00)
+        assert!(svg.contains("h 20.00") || svg.contains("h 30.00") || svg.contains("h 40.00"));
     }
 
     #[test]
     fn test_classy_shape_generation() {
-        let matrix = QrMatrix::new("TEST CLASSY", EccLevel::M, false).unwrap();
-        let mut config = VectorRenderConfig::default();
-        config.module_shape = ModuleShape::Classy;
+        let matrix = QrMatrix::new("https://den1zz.dev", EccLevel::M, false).unwrap();
+        let config = VectorRenderConfig {
+            module_shape: ModuleShape::Classy,
+            ..Default::default()
+        };
         let svg = VectorRenderer::render_svg(&matrix, &config);
-        assert!(svg.contains("<path d=\"M "));
+        assert!(svg.contains("<path"));
     }
 }

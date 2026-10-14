@@ -34,7 +34,7 @@ if [ -d crates/qr-frontend/public ]; then
 fi
 
 echo "==> Compiling Ahead-of-Time minified CSS..."
-npx -y tailwindcss@3 -i crates/qr-frontend/input.css --content "./crates/qr-frontend/src/**/*.rs" --minify -o crates/qr-frontend/dist/style.css
+npx --yes tailwindcss@3 -i crates/qr-frontend/input.css --content "./crates/qr-frontend/src/**/*.rs" --minify -o crates/qr-frontend/dist/style.css
 
 echo "==> Compiling client WASM bundle (release mode)..."
 cargo build --release -p qr-frontend --target wasm32-unknown-unknown --features hydrate
@@ -46,7 +46,11 @@ echo "==> Optimizing WASM binary with wasm-opt -Oz..."
 wasm-opt -Oz --all-features crates/qr-frontend/dist/qr_frontend_bg.wasm -o crates/qr-frontend/dist/qr_frontend_bg.wasm
 
 echo "==> Minifying JavaScript bindings with esbuild..."
-npx -y esbuild crates/qr-frontend/dist/qr_frontend.js --minify --allow-overwrite --outfile=crates/qr-frontend/dist/qr_frontend.js
+npx --yes esbuild crates/qr-frontend/dist/qr_frontend.js --minify --allow-overwrite --outfile=crates/qr-frontend/dist/qr_frontend.js
+if [ -f crates/qr-frontend/dist/sw.js ]; then
+    echo "==> Minifying Service Worker with esbuild..."
+    npx --yes esbuild crates/qr-frontend/dist/sw.js --minify --allow-overwrite --outfile=crates/qr-frontend/dist/sw.js
+fi
 
 echo "==> Pre-rendering HTML with Leptos SSR..."
 cargo run --release -p qr-frontend --bin prerender --features ssr -- crates/qr-frontend/dist
