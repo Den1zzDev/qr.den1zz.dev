@@ -1,23 +1,29 @@
-use axum::{
-    extract::Json,
-    http::StatusCode,
-    routing::{get, post},
-    Router,
-};
+//! Axum server with streaming SSR and QR processing endpoints.
+
+use std::net::SocketAddr;
+
+use axum::extract::Json;
+use axum::http::StatusCode;
+use axum::routing::get;
+use axum::routing::post;
+use axum::Router;
 use base64::Engine;
 use leptos::prelude::*;
-use qr_core::{
-    matrix::{EccLevel, QrMatrix},
-    payload::Payload,
-    vector::{VectorRenderConfig, VectorRenderer},
-    verifier::{ScanVerifier, VerificationReport},
-};
+use qr_core::matrix::EccLevel;
+use qr_core::matrix::Overlay;
+use qr_core::matrix::QrMatrix;
+use qr_core::payload::Payload;
+use qr_core::vector;
+use qr_core::vector::VectorRenderConfig;
+use qr_core::verifier;
+use qr_core::verifier::VerificationReport;
 use qr_frontend::App;
-use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
+use serde::Deserialize;
+use serde::Serialize;
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 
 const TAILWIND_CONFIG: &str = r##"
 tailwind.config = {
@@ -241,6 +247,7 @@ const CSS_STYLES: &str = r##"
     }
 "##;
 
+/// Document shell used for streaming server rendering.
 #[component]
 fn Shell() -> impl IntoView {
     view! {
@@ -271,45 +278,52 @@ fn Shell() -> impl IntoView {
     }
 }
 
+/// Request body for `POST /api/generate/vector`.
 #[derive(Debug, Deserialize)]
-pub struct VectorGenerateRequest {
-    pub payload: Payload,
-    pub config: VectorRenderConfig,
-    pub ecc: Option<EccLevel>,
+struct VectorGenerateRequest {
+    payload: Payload,
+    config: VectorRenderConfig,
+    ecc: Option<EccLevel>,
 }
 
+/// Response body for `POST /api/generate/vector`.
 #[derive(Debug, Serialize)]
-pub struct VectorGenerateResponse {
-    pub svg: String,
-    pub content: String,
-    pub raw_bytes: usize,
-    pub cleaned_bytes: usize,
-    pub stripped_count: usize,
+struct VectorGenerateResponse {
+    svg: String,
+    content: String,
+    raw_bytes: usize,
+    cleaned_bytes: usize,
+    stripped_count: usize,
 }
 
+/// Request body for `POST /api/verify`.
 #[derive(Debug, Deserialize)]
-pub struct VerifyRequest {
-    pub image_base64: String,
-    pub expected_payload: String,
-    pub dark_color: Option<String>,
-    pub light_color: Option<String>,
+struct VerifyRequest {
+    image_base64: String,
+    expected_payload: String,
+    dark_color: Option<String>,
+    light_color: Option<String>,
 }
 
+/// Returns `OK` while the server is healthy.
 async fn health_check() -> &'static str {
     "OK"
 }
 
+/// Generates an SVG for the requested payload and render configuration.
 async fn generate_vector(
-    Json(req): Json<VectorGenerateRequest>,
+    Json(request): Json<VectorGenerateRequest>,
 ) -> Result<Json<VectorGenerateResponse>, (StatusCode, String)> {
-    let sanitized = req.payload.sanitize();
-    let has_logo = req.config.logo.is_some();
-    let ecc = req.ecc.unwrap_or(EccLevel::Auto);
-
-    let matrix = QrMatrix::new(&sanitized.content, ecc, has_logo)
-        .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
-
-    let svg = VectorRenderer::render_svg(&matrix, &req.config);
+    let sanitized = request.payload.sanitize();
+    let overlay = if request.config.logo.is_some() {
+        Overlay::Image
+    } else {
+        Overlay::None
+    };
+    let ecc = request.ecc.unwrap_or(EccLevel::Auto);
+    let matrix = QrMatrix::try_new(&sanitized.content, ecc, overlay)
+        .map_err(|error| (StatusCode::BAD_REQUEST, error.to_string()))?;
+    let svg = vector::render_svg(&matrix, &request.config);
 
     Ok(Json(VectorGenerateResponse {
         svg,
@@ -320,40 +334,42 @@ async fn generate_vector(
     }))
 }
 
+/// Decodes an uploaded image and verifies that it is scannable.
 async fn verify_image(
-    Json(req): Json<VerifyRequest>,
+    Json(request): Json<VerifyRequest>,
 ) -> Result<Json<VerificationReport>, (StatusCode, String)> {
-    let raw_b64 = req
+    let encoded = request
         .image_base64
         .trim_start_matches("data:image/png;base64,")
         .trim_start_matches("data:image/jpeg;base64,")
         .trim_start_matches("data:image/webp;base64,");
-
-    let img_bytes = base64::engine::general_purpose::STANDARD
-        .decode(raw_b64)
-        .map_err(|e| {
+    let image_bytes = base64::engine::general_purpose::STANDARD
+        .decode(encoded)
+        .map_err(|error| {
             (
                 StatusCode::BAD_REQUEST,
-                format!("Invalid base64 image: {e}"),
+                format!("Invalid base64 image: {error}"),
             )
         })?;
-
-    let dyn_img = image::load_from_memory(&img_bytes).map_err(|e| {
+    let image = image::load_from_memory(&image_bytes).map_err(|error| {
         (
             StatusCode::BAD_REQUEST,
-            format!("Failed to decode image: {e}"),
+            format!("Failed to decode image: {error}"),
         )
     })?;
 
-    let dark_hex = req.dark_color.as_deref().unwrap_or("#000000");
-    let light_hex = req.light_color.as_deref().unwrap_or("#FFFFFF");
-
-    let report = ScanVerifier::verify(&dyn_img, &req.expected_payload, dark_hex, light_hex);
-    Ok(Json(report))
+    let dark_color = request.dark_color.as_deref().unwrap_or("#000000");
+    let light_color = request.light_color.as_deref().unwrap_or("#FFFFFF");
+    Ok(Json(verifier::verify(
+        &image,
+        &request.expected_payload,
+        dark_color,
+        light_color,
+    )))
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> std::io::Result<()> {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
@@ -362,7 +378,6 @@ async fn main() {
         .init();
 
     let pkg_dir = std::env::var("PKG_DIR").unwrap_or_else(|_| "crates/qr-server/pkg".to_string());
-
     let app = Router::new()
         .route("/health", get(health_check))
         .route("/api/generate/vector", post(generate_vector))
@@ -373,12 +388,11 @@ async fn main() {
 
     let port: u16 = std::env::var("PORT")
         .ok()
-        .and_then(|p| p.parse().ok())
+        .and_then(|port| port.parse().ok())
         .unwrap_or(4321);
+    let address = SocketAddr::from(([0, 0, 0, 0], port));
+    tracing::info!("Listening on http://{address}");
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    tracing::info!("Listening on http://{}", addr);
-
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(address).await?;
+    axum::serve(listener, app).await
 }

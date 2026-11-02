@@ -46,3 +46,6 @@ web-sys = { version = "0.3", features = [
     "HtmlAnchorElement",
 ] }
 console_error_panic_hook = "0.1"
+
+[lints]
+workspace = true

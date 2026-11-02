@@ -1,56 +1,37 @@
+//! Payload editor for every supported payload kind.
+
 use leptos::prelude::*;
-use qr_core::payload::{
-    strip_all_query, strip_tracking_query, CryptoCurrency, Payload, UrlQueryInfo, WifiAuth,
-};
+use qr_core::payload;
+use qr_core::payload::CryptoCurrency;
+use qr_core::payload::Payload;
+use qr_core::payload::UrlQueryInfo;
+use qr_core::payload::WifiAuth;
 
-pub use crate::components::glide_select::{GlideSelect, PayloadTab};
+use crate::components::glide_select::GlideSelect;
+use crate::components::glide_select::PayloadTab;
+use crate::studio_state::StudioState;
 
+/// Editor for the payload that will be encoded.
 #[component]
-pub fn PayloadEditor(
-    active_payload: Memo<Payload>,
-    active_tab: RwSignal<PayloadTab>,
-    url_input: RwSignal<String>,
-    text_input: RwSignal<String>,
-    wifi_ssid: RwSignal<String>,
-    wifi_password: RwSignal<String>,
-    wifi_auth: RwSignal<WifiAuth>,
-    wifi_hidden: RwSignal<bool>,
-    vcard_first_name: RwSignal<String>,
-    vcard_last_name: RwSignal<String>,
-    vcard_phone: RwSignal<String>,
-    vcard_email: RwSignal<String>,
-    vcard_org: RwSignal<String>,
-    vcard_title: RwSignal<String>,
-    vcard_url: RwSignal<String>,
-    vcard_note: RwSignal<String>,
-    email_to: RwSignal<String>,
-    email_subject: RwSignal<String>,
-    email_body: RwSignal<String>,
-    phone_number: RwSignal<String>,
-    geo_lat: RwSignal<String>,
-    geo_lng: RwSignal<String>,
-    geo_query: RwSignal<String>,
-    crypto_currency: RwSignal<CryptoCurrency>,
-    crypto_address: RwSignal<String>,
-    crypto_amount: RwSignal<String>,
-    crypto_message: RwSignal<String>,
+pub(crate) fn PayloadEditor(
+    state: StudioState,
+    payload: Memo<Payload>,
     query_info: Memo<Option<UrlQueryInfo>>,
 ) -> impl IntoView {
     let (show_wifi_password, set_show_wifi_password) = signal(false);
+    let sanitized = Memo::new(move |_| payload.get().sanitize());
 
     view! {
         <div class="glass-panel p-4 sm:p-5 space-y-3">
-            // Compact Header: Title + GlideSelect Chip Dropdown
             <div class="flex items-center justify-between">
                 <label class="text-xs font-semibold uppercase tracking-wider text-[#a0a0a0]">
-                    {move || active_tab.get().header_title()}
+                    {move || state.active_tab.get().header_title()}
                 </label>
-                <GlideSelect active_tab=active_tab />
+                <GlideSelect active_tab=state.active_tab />
             </div>
 
-            // Active Tab Content
             <div>
-                {move || match active_tab.get() {
+                {move || match state.active_tab.get() {
                     PayloadTab::Url => view! {
                         <div class="space-y-3">
                             <div class="relative flex items-center">
@@ -58,16 +39,18 @@ pub fn PayloadEditor(
                                     type="url"
                                     class="w-full text-sm font-mono pr-8 py-2.5 px-3 rounded-lg bg-[#050505] border border-[rgba(255,255,255,0.12)] focus:border-[#00f0ff] text-[#ffffff] placeholder:text-[#555555] outline-none"
                                     placeholder="https://den1zz.dev"
-                                    prop:value=move || url_input.get()
-                                    on:input=move |ev| url_input.set(event_target_value(&ev))
+                                    prop:value=move || state.url_input.get()
+                                    on:input=move |event| {
+                                        state.url_input.set(event_target_value(&event));
+                                    }
                                 />
-                                {move || if !url_input.get().is_empty() {
+                                {move || if !state.url_input.get().is_empty() {
                                     view! {
                                         <button
                                             type="button"
                                             title="Clear URL"
                                             class="absolute right-2 text-[#555555] hover:text-[#ffffff] text-sm px-1.5 py-0.5 rounded transition-colors"
-                                            on:click=move |_| url_input.set(String::new())
+                                            on:click=move |_| state.url_input.set(String::new())
                                         >
                                             "✕"
                                         </button>
@@ -77,7 +60,6 @@ pub fn PayloadEditor(
                                 }}
                             </div>
 
-                            // Tracking Parameter Inspector Notification (No emojis, clean AMOLED design)
                             {move || if let Some(info) = query_info.get() {
                                 view! {
                                     <div class="p-3 rounded-lg bg-[#0c0c0c] border border-[rgba(0,240,255,0.25)] text-xs space-y-2">
@@ -96,8 +78,8 @@ pub fn PayloadEditor(
                                                         type="button"
                                                         class="button button-primary !py-1 !px-2.5 !text-xs !min-h-0"
                                                         on:click=move |_| {
-                                                            let (cleaned, _) = strip_tracking_query(&url_input.get());
-                                                            url_input.set(cleaned);
+                                                            let cleaned = payload::strip_tracking_query(&state.url_input.get());
+                                                            state.url_input.set(cleaned.url);
                                                         }
                                                     >
                                                         {format!("Strip {} Tracking Tag(s)", info.tracking_param_count)}
@@ -110,8 +92,8 @@ pub fn PayloadEditor(
                                                 type="button"
                                                 class="button button-secondary !py-1 !px-2.5 !text-xs !min-h-0"
                                                 on:click=move |_| {
-                                                    let cleaned = strip_all_query(&url_input.get());
-                                                    url_input.set(cleaned);
+                                                    let cleaned = payload::strip_all_query(&state.url_input.get());
+                                                    state.url_input.set(cleaned);
                                                 }
                                             >
                                                 "Remove All Parameters"
@@ -130,8 +112,8 @@ pub fn PayloadEditor(
                             <textarea
                                 class="w-full text-sm font-mono py-2 px-3 rounded-lg bg-[#050505] border border-[rgba(255,255,255,0.12)] focus:border-[#00f0ff] text-[#ffffff] outline-none"
                                 rows="3"
-                                prop:value=move || text_input.get()
-                                on:input=move |ev| text_input.set(event_target_value(&ev))
+                                prop:value=move || state.text_input.get()
+                                on:input=move |event| state.text_input.set(event_target_value(&event))
                             />
                         </div>
                     }.into_any(),
@@ -145,8 +127,8 @@ pub fn PayloadEditor(
                                 <input
                                     type="text"
                                     class="w-full text-sm font-mono"
-                                    prop:value=move || wifi_ssid.get()
-                                    on:input=move |ev| wifi_ssid.set(event_target_value(&ev))
+                                    prop:value=move || state.wifi_ssid.get()
+                                    on:input=move |event| state.wifi_ssid.set(event_target_value(&event))
                                 />
                             </div>
 
@@ -160,13 +142,13 @@ pub fn PayloadEditor(
                                         (WifiAuth::Wep, "WEP"),
                                         (WifiAuth::Nopass, "Open"),
                                     ].into_iter().map(|(auth, label)| {
-                                        let is_sel = move || wifi_auth.get() == auth;
+                                        let is_selected = move || state.wifi_auth.get() == auth;
                                         view! {
                                             <button
                                                 type="button"
-                                                on:click=move |_| wifi_auth.set(auth)
+                                                on:click=move |_| state.wifi_auth.set(auth)
                                                 class=move || {
-                                                    if is_sel() {
+                                                    if is_selected() {
                                                         "py-1.5 px-2 rounded-lg text-xs font-bold bg-[#00f0ff] text-[#000000] border border-[#00f0ff]"
                                                     } else {
                                                         "py-1.5 px-2 rounded-lg text-xs font-medium text-[#a0a0a0] bg-[#111111] border border-[rgba(255,255,255,0.08)] hover:text-[#ffffff]"
@@ -180,7 +162,7 @@ pub fn PayloadEditor(
                                 </div>
                             </div>
 
-                            {move || if wifi_auth.get() != WifiAuth::Nopass {
+                            {move || if state.wifi_auth.get() != WifiAuth::Nopass {
                                 view! {
                                     <div>
                                         <div class="flex items-center justify-between mb-1">
@@ -190,7 +172,9 @@ pub fn PayloadEditor(
                                             <button
                                                 type="button"
                                                 class="text-[11px] text-[#00f0ff] hover:underline"
-                                                on:click=move |_| set_show_wifi_password.update(|v| *v = !*v)
+                                                on:click=move |_| {
+                                                    set_show_wifi_password.update(|visible| *visible = !*visible);
+                                                }
                                             >
                                                 {move || if show_wifi_password.get() { "Hide" } else { "Show" }}
                                             </button>
@@ -198,8 +182,10 @@ pub fn PayloadEditor(
                                         <input
                                             type=move || if show_wifi_password.get() { "text" } else { "password" }
                                             class="w-full text-sm font-mono"
-                                            prop:value=move || wifi_password.get()
-                                            on:input=move |ev| wifi_password.set(event_target_value(&ev))
+                                            prop:value=move || state.wifi_password.get()
+                                            on:input=move |event| {
+                                                state.wifi_password.set(event_target_value(&event));
+                                            }
                                         />
                                     </div>
                                 }.into_any()
@@ -212,8 +198,10 @@ pub fn PayloadEditor(
                                     type="checkbox"
                                     id="wifi_hidden"
                                     class="rounded accent-[#00f0ff]"
-                                    prop:checked=move || wifi_hidden.get()
-                                    on:change=move |ev| wifi_hidden.set(event_target_checked(&ev))
+                                    prop:checked=move || state.wifi_hidden.get()
+                                    on:change=move |event| {
+                                        state.wifi_hidden.set(event_target_checked(&event));
+                                    }
                                 />
                                 <label for="wifi_hidden" class="text-xs text-[#a0a0a0] cursor-pointer">
                                     "Hidden network"
@@ -232,8 +220,10 @@ pub fn PayloadEditor(
                                     <input
                                         type="text"
                                         class="w-full text-sm font-mono"
-                                        prop:value=move || vcard_first_name.get()
-                                        on:input=move |ev| vcard_first_name.set(event_target_value(&ev))
+                                        prop:value=move || state.vcard_first_name.get()
+                                        on:input=move |event| {
+                                            state.vcard_first_name.set(event_target_value(&event));
+                                        }
                                     />
                                 </div>
                                 <div>
@@ -243,8 +233,10 @@ pub fn PayloadEditor(
                                     <input
                                         type="text"
                                         class="w-full text-sm font-mono"
-                                        prop:value=move || vcard_last_name.get()
-                                        on:input=move |ev| vcard_last_name.set(event_target_value(&ev))
+                                        prop:value=move || state.vcard_last_name.get()
+                                        on:input=move |event| {
+                                            state.vcard_last_name.set(event_target_value(&event));
+                                        }
                                     />
                                 </div>
                             </div>
@@ -257,8 +249,8 @@ pub fn PayloadEditor(
                                     <input
                                         type="tel"
                                         class="w-full text-sm font-mono"
-                                        prop:value=move || vcard_phone.get()
-                                        on:input=move |ev| vcard_phone.set(event_target_value(&ev))
+                                        prop:value=move || state.vcard_phone.get()
+                                        on:input=move |event| state.vcard_phone.set(event_target_value(&event))
                                     />
                                 </div>
                                 <div>
@@ -268,8 +260,8 @@ pub fn PayloadEditor(
                                     <input
                                         type="email"
                                         class="w-full text-sm font-mono"
-                                        prop:value=move || vcard_email.get()
-                                        on:input=move |ev| vcard_email.set(event_target_value(&ev))
+                                        prop:value=move || state.vcard_email.get()
+                                        on:input=move |event| state.vcard_email.set(event_target_value(&event))
                                     />
                                 </div>
                             </div>
@@ -282,8 +274,10 @@ pub fn PayloadEditor(
                                     <input
                                         type="text"
                                         class="w-full text-sm font-mono"
-                                        prop:value=move || vcard_org.get()
-                                        on:input=move |ev| vcard_org.set(event_target_value(&ev))
+                                        prop:value=move || state.vcard_organization.get()
+                                        on:input=move |event| {
+                                            state.vcard_organization.set(event_target_value(&event));
+                                        }
                                     />
                                 </div>
                                 <div>
@@ -293,8 +287,8 @@ pub fn PayloadEditor(
                                     <input
                                         type="text"
                                         class="w-full text-sm font-mono"
-                                        prop:value=move || vcard_title.get()
-                                        on:input=move |ev| vcard_title.set(event_target_value(&ev))
+                                        prop:value=move || state.vcard_title.get()
+                                        on:input=move |event| state.vcard_title.set(event_target_value(&event))
                                     />
                                 </div>
                             </div>
@@ -306,8 +300,8 @@ pub fn PayloadEditor(
                                 <input
                                     type="url"
                                     class="w-full text-sm font-mono"
-                                    prop:value=move || vcard_url.get()
-                                    on:input=move |ev| vcard_url.set(event_target_value(&ev))
+                                    prop:value=move || state.vcard_url.get()
+                                    on:input=move |event| state.vcard_url.set(event_target_value(&event))
                                 />
                             </div>
 
@@ -318,8 +312,8 @@ pub fn PayloadEditor(
                                 <input
                                     type="text"
                                     class="w-full text-sm font-mono"
-                                    prop:value=move || vcard_note.get()
-                                    on:input=move |ev| vcard_note.set(event_target_value(&ev))
+                                    prop:value=move || state.vcard_note.get()
+                                    on:input=move |event| state.vcard_note.set(event_target_value(&event))
                                 />
                             </div>
                         </div>
@@ -334,8 +328,8 @@ pub fn PayloadEditor(
                                 <input
                                     type="email"
                                     class="w-full text-sm font-mono"
-                                    prop:value=move || email_to.get()
-                                    on:input=move |ev| email_to.set(event_target_value(&ev))
+                                    prop:value=move || state.email_to.get()
+                                    on:input=move |event| state.email_to.set(event_target_value(&event))
                                 />
                             </div>
                             <div>
@@ -345,8 +339,8 @@ pub fn PayloadEditor(
                                 <input
                                     type="text"
                                     class="w-full text-sm font-mono"
-                                    prop:value=move || email_subject.get()
-                                    on:input=move |ev| email_subject.set(event_target_value(&ev))
+                                    prop:value=move || state.email_subject.get()
+                                    on:input=move |event| state.email_subject.set(event_target_value(&event))
                                 />
                             </div>
                             <div>
@@ -356,8 +350,8 @@ pub fn PayloadEditor(
                                 <textarea
                                     class="w-full text-sm font-mono"
                                     rows="3"
-                                    prop:value=move || email_body.get()
-                                    on:input=move |ev| email_body.set(event_target_value(&ev))
+                                    prop:value=move || state.email_body.get()
+                                    on:input=move |event| state.email_body.set(event_target_value(&event))
                                 />
                             </div>
                         </div>
@@ -372,8 +366,8 @@ pub fn PayloadEditor(
                                 <input
                                     type="tel"
                                     class="w-full text-sm font-mono"
-                                    prop:value=move || phone_number.get()
-                                    on:input=move |ev| phone_number.set(event_target_value(&ev))
+                                    prop:value=move || state.phone_number.get()
+                                    on:input=move |event| state.phone_number.set(event_target_value(&event))
                                 />
                             </div>
                         </div>
@@ -390,8 +384,10 @@ pub fn PayloadEditor(
                                         type="number"
                                         step="any"
                                         class="w-full text-sm font-mono"
-                                        prop:value=move || geo_lat.get()
-                                        on:input=move |ev| geo_lat.set(event_target_value(&ev))
+                                        prop:value=move || state.geo_latitude.get()
+                                        on:input=move |event| {
+                                            state.geo_latitude.set(event_target_value(&event));
+                                        }
                                     />
                                 </div>
                                 <div>
@@ -402,8 +398,10 @@ pub fn PayloadEditor(
                                         type="number"
                                         step="any"
                                         class="w-full text-sm font-mono"
-                                        prop:value=move || geo_lng.get()
-                                        on:input=move |ev| geo_lng.set(event_target_value(&ev))
+                                        prop:value=move || state.geo_longitude.get()
+                                        on:input=move |event| {
+                                            state.geo_longitude.set(event_target_value(&event));
+                                        }
                                     />
                                 </div>
                             </div>
@@ -414,8 +412,8 @@ pub fn PayloadEditor(
                                 <input
                                     type="text"
                                     class="w-full text-sm font-mono"
-                                    prop:value=move || geo_query.get()
-                                    on:input=move |ev| geo_query.set(event_target_value(&ev))
+                                    prop:value=move || state.geo_query.get()
+                                    on:input=move |event| state.geo_query.set(event_target_value(&event))
                                 />
                             </div>
                         </div>
@@ -434,14 +432,14 @@ pub fn PayloadEditor(
                                         (CryptoCurrency::Solana, "SOL"),
                                         (CryptoCurrency::Monero, "XMR"),
                                         (CryptoCurrency::Litecoin, "LTC"),
-                                    ].into_iter().map(|(curr, label)| {
-                                        let is_sel = move || crypto_currency.get() == curr;
+                                    ].into_iter().map(|(currency, label)| {
+                                        let is_selected = move || state.crypto_currency.get() == currency;
                                         view! {
                                             <button
                                                 type="button"
-                                                on:click=move |_| crypto_currency.set(curr)
+                                                on:click=move |_| state.crypto_currency.set(currency)
                                                 class=move || {
-                                                    if is_sel() {
+                                                    if is_selected() {
                                                         "py-1.5 px-2 rounded-lg text-xs font-bold bg-[#00f0ff] text-[#000000] border border-[#00f0ff]"
                                                     } else {
                                                         "py-1.5 px-2 rounded-lg text-xs font-medium text-[#a0a0a0] bg-[#111111] border border-[rgba(255,255,255,0.08)] hover:text-[#ffffff]"
@@ -462,8 +460,10 @@ pub fn PayloadEditor(
                                 <input
                                     type="text"
                                     class="w-full text-sm font-mono"
-                                    prop:value=move || crypto_address.get()
-                                    on:input=move |ev| crypto_address.set(event_target_value(&ev))
+                                    prop:value=move || state.crypto_address.get()
+                                    on:input=move |event| {
+                                        state.crypto_address.set(event_target_value(&event));
+                                    }
                                 />
                             </div>
 
@@ -475,8 +475,10 @@ pub fn PayloadEditor(
                                     <input
                                         type="text"
                                         class="w-full text-sm font-mono"
-                                        prop:value=move || crypto_amount.get()
-                                        on:input=move |ev| crypto_amount.set(event_target_value(&ev))
+                                        prop:value=move || state.crypto_amount.get()
+                                        on:input=move |event| {
+                                            state.crypto_amount.set(event_target_value(&event));
+                                        }
                                     />
                                 </div>
                                 <div>
@@ -486,8 +488,10 @@ pub fn PayloadEditor(
                                     <input
                                         type="text"
                                         class="w-full text-sm font-mono"
-                                        prop:value=move || crypto_message.get()
-                                        on:input=move |ev| crypto_message.set(event_target_value(&ev))
+                                        prop:value=move || state.crypto_message.get()
+                                        on:input=move |event| {
+                                            state.crypto_message.set(event_target_value(&event));
+                                        }
                                     />
                                 </div>
                             </div>
@@ -496,19 +500,12 @@ pub fn PayloadEditor(
                 }}
             </div>
 
-            // Payload Encoded String & Byte Count Footer
             <div class="pt-2 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between text-[11px] text-[#555555]">
                 <span class="truncate max-w-[280px] sm:max-w-md font-mono">
-                    {move || {
-                        let sanitized = active_payload.get().sanitize();
-                        sanitized.content
-                    }}
+                    {move || sanitized.get().content}
                 </span>
                 <span class="font-mono text-[#a0a0a0] shrink-0">
-                    {move || {
-                        let sanitized = active_payload.get().sanitize();
-                        format!("{} bytes", sanitized.cleaned_bytes)
-                    }}
+                    {move || format!("{} bytes", sanitized.get().cleaned_bytes)}
                 </span>
             </div>
         </div>

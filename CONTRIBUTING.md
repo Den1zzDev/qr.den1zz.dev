@@ -70,6 +70,28 @@ Ensure all workspace crates compile without errors or warnings:
 cargo check --workspace --all-targets
 ```
 
+## Code style
+
+The workspace follows the [Google Rust Style Guide](https://google.github.io/styleguide/rustguide.html).
+Formatting is configured in [`rustfmt.toml`](rustfmt.toml) with a 100-column limit.
+
+Before submitting a pull request, verify formatting, lints, and tests:
+
+```bash
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+```
+
+Conventions worth knowing:
+
+- Public items in `qr-core` carry doc comments; the crate enables the `missing_docs` lint.
+- Types are imported directly, while free functions are called through their module
+  (for example `vector::render_svg`).
+- Fallible constructors are named `try_new`.
+- Public enums and metadata structs are `#[non_exhaustive]`.
+- `unsafe` code is forbidden across the workspace.
+
 ## Pull request guidelines
 
 1. Fork the repository and create a branch from `main`.
