@@ -34,6 +34,8 @@ web-sys = { version = "0.3", features = [
     "FileReader",
     "ProgressEvent",
     "Clipboard",
+    "DataTransfer",
+    "DragEvent",
     "Navigator",
     "Window",
     "Document",
@@ -44,5 +46,10 @@ web-sys = { version = "0.3", features = [
     "BlobPropertyBag",
     "Url",
     "HtmlAnchorElement",
+    "IntersectionObserver",
+    "IntersectionObserverEntry",
 ] }
 console_error_panic_hook = "0.1"
+
+[lints]
+workspace = true

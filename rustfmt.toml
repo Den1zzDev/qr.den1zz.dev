@@ -1,0 +1,17 @@
+# Formatting configuration for the Google Rust style guide.
+# https://google.github.io/styleguide/rustguide.html#code-formatting-and-aesthetics
+edition = "2021"
+max_width = 100
+newline_style = "Unix"
+use_field_init_shorthand = true
+use_try_shorthand = true
+force_explicit_abi = true
+
+# The options below implement further Google rules but require nightly rustfmt.
+# They are recorded here so that `cargo +nightly fmt` produces the intended
+# result. `imports_granularity = "Module"` corresponds to "A `use` statement
+# should import items from one module".
+# imports_granularity = "Module"
+# group_imports = "StdExternalCrate"
+# hex_literal_case = "Lower"
+# format_macro_matchers = true

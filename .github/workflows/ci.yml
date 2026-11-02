@@ -20,12 +20,20 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
 
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
       - name: Cargo check
         run: cargo check --workspace --all-targets
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
 
       - name: Run unit tests
         run: cargo test --workspace
@@ -42,6 +50,11 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
 
@@ -51,9 +64,27 @@ jobs:
           curl -sSL "https://github.com/rustwasm/wasm-bindgen/releases/download/${WASM_BINDGEN_VERSION}/wasm-bindgen-${WASM_BINDGEN_VERSION}-x86_64-unknown-linux-musl.tar.gz" | tar -xz --strip-components=1 -C "$HOME/.cargo/bin"
           chmod +x "$HOME/.cargo/bin/wasm-bindgen"
 
+      - name: Build stylesheet
+        run: |
+          mkdir -p crates/qr-frontend/dist
+          npx --yes tailwindcss@3 \
+            -i crates/qr-frontend/input.css \
+            --content "./crates/qr-frontend/src/**/*.rs" \
+            --minify \
+            -o crates/qr-frontend/dist/style.css
+
       - name: Build WebAssembly frontend & pre-render
         run: |
           cargo build --release -p qr-frontend --target wasm32-unknown-unknown --features hydrate
-          mkdir -p crates/qr-frontend/dist
           wasm-bindgen --target web --out-dir crates/qr-frontend/dist --no-typescript target/wasm32-unknown-unknown/release/qr_frontend.wasm
+          cp -r crates/qr-frontend/public/* crates/qr-frontend/dist/
           cargo run --release -p qr-frontend --bin prerender --features ssr -- crates/qr-frontend/dist
+
+      - name: Check bundle size
+        run: |
+          test -s crates/qr-frontend/dist/index.html
+          test -s crates/qr-frontend/dist/style.css
+          test -s crates/qr-frontend/dist/qr_frontend_bg.wasm
+          WASM_BYTES=$(stat -c%s crates/qr-frontend/dist/qr_frontend_bg.wasm)
+          echo "wasm: ${WASM_BYTES} bytes"
+          test "$WASM_BYTES" -lt 1500000

@@ -1,176 +1,223 @@
-use leptos::prelude::*;
+//! Chip-style dropdown for selecting the active payload tab.
 
+use std::time::Duration;
+
+use leptos::html;
+use leptos::prelude::*;
+use web_sys::KeyboardEvent;
+
+use crate::components::icons::Check;
+use crate::components::icons::ChevronDown;
+use crate::components::icons::PayloadIcon;
+
+/// Payload kinds supported by the editor.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PayloadTab {
+pub(crate) enum PayloadTab {
+    /// Website link.
     Url,
+    /// Plain text.
     Text,
+    /// Wi-Fi credentials.
     Wifi,
+    /// Contact card.
     VCard,
+    /// Email draft.
     Email,
+    /// Telephone number.
     Phone,
+    /// Geographic coordinates.
     Geo,
+    /// Cryptocurrency payment.
     Crypto,
 }
 
 impl PayloadTab {
-    pub const ALL: [PayloadTab; 8] = [
-        PayloadTab::Url,
-        PayloadTab::Text,
-        PayloadTab::Wifi,
-        PayloadTab::VCard,
-        PayloadTab::Email,
-        PayloadTab::Phone,
-        PayloadTab::Geo,
-        PayloadTab::Crypto,
+    /// Every tab, in display order.
+    pub(crate) const ALL: [Self; 8] = [
+        Self::Url,
+        Self::Text,
+        Self::Wifi,
+        Self::VCard,
+        Self::Email,
+        Self::Phone,
+        Self::Geo,
+        Self::Crypto,
     ];
 
-    pub fn label(&self) -> &'static str {
+    /// Returns the short label shown in the dropdown.
+    pub(crate) fn label(&self) -> &'static str {
         match self {
-            PayloadTab::Url => "Link",
-            PayloadTab::Text => "Text",
-            PayloadTab::Wifi => "Wi-Fi",
-            PayloadTab::VCard => "vCard",
-            PayloadTab::Email => "Email",
-            PayloadTab::Phone => "Phone",
-            PayloadTab::Geo => "Location",
-            PayloadTab::Crypto => "Crypto",
+            Self::Url => "Link",
+            Self::Text => "Text",
+            Self::Wifi => "Wi-Fi",
+            Self::VCard => "vCard",
+            Self::Email => "Email",
+            Self::Phone => "Phone",
+            Self::Geo => "Location",
+            Self::Crypto => "Crypto",
         }
     }
 
-    pub fn header_title(&self) -> &'static str {
+    /// Returns the heading shown above the editor.
+    pub(crate) fn header_title(&self) -> &'static str {
         match self {
-            PayloadTab::Url => "Target URL",
-            PayloadTab::Text => "Text / Raw Data",
-            PayloadTab::Wifi => "Wi-Fi Network",
-            PayloadTab::VCard => "Contact Card (vCard)",
-            PayloadTab::Email => "Email Draft",
-            PayloadTab::Phone => "Phone Number",
-            PayloadTab::Geo => "Location Coordinates",
-            PayloadTab::Crypto => "Cryptocurrency Payment",
+            Self::Url => "Target URL",
+            Self::Text => "Text / Raw Data",
+            Self::Wifi => "Wi-Fi Network",
+            Self::VCard => "Contact Card (vCard)",
+            Self::Email => "Email Draft",
+            Self::Phone => "Phone Number",
+            Self::Geo => "Location Coordinates",
+            Self::Crypto => "Cryptocurrency Payment",
         }
     }
 }
 
+/// Vertical offsets for the animated selection pill.
 const PILL_STYLES: [&str; 8] = [
-    "transform: translateY(calc(0 * (var(--gs-row, 28px) + 1px))); opacity: 1;",
-    "transform: translateY(calc(1 * (var(--gs-row, 28px) + 1px))); opacity: 1;",
-    "transform: translateY(calc(2 * (var(--gs-row, 28px) + 1px))); opacity: 1;",
-    "transform: translateY(calc(3 * (var(--gs-row, 28px) + 1px))); opacity: 1;",
-    "transform: translateY(calc(4 * (var(--gs-row, 28px) + 1px))); opacity: 1;",
-    "transform: translateY(calc(5 * (var(--gs-row, 28px) + 1px))); opacity: 1;",
-    "transform: translateY(calc(6 * (var(--gs-row, 28px) + 1px))); opacity: 1;",
-    "transform: translateY(calc(7 * (var(--gs-row, 28px) + 1px))); opacity: 1;",
+    "transform: translateY(calc(0 * (var(--gs-row, 32px) + 1px))); opacity: 1;",
+    "transform: translateY(calc(1 * (var(--gs-row, 32px) + 1px))); opacity: 1;",
+    "transform: translateY(calc(2 * (var(--gs-row, 32px) + 1px))); opacity: 1;",
+    "transform: translateY(calc(3 * (var(--gs-row, 32px) + 1px))); opacity: 1;",
+    "transform: translateY(calc(4 * (var(--gs-row, 32px) + 1px))); opacity: 1;",
+    "transform: translateY(calc(5 * (var(--gs-row, 32px) + 1px))); opacity: 1;",
+    "transform: translateY(calc(6 * (var(--gs-row, 32px) + 1px))); opacity: 1;",
+    "transform: translateY(calc(7 * (var(--gs-row, 32px) + 1px))); opacity: 1;",
 ];
 
+/// Dropdown that selects the active payload tab.
 #[component]
-pub fn GlideSelect(active_tab: RwSignal<PayloadTab>) -> impl IntoView {
+pub(crate) fn GlideSelect(active_tab: RwSignal<PayloadTab>) -> impl IntoView {
     let (is_open, set_is_open) = signal(false);
     let (hover_index, set_hover_index) = signal(Option::<usize>::None);
+    let (is_swapping, set_is_swapping) = signal(false);
+    let trigger_ref = NodeRef::<html::Button>::new();
 
     let selected_index = move || {
         PayloadTab::ALL
             .iter()
-            .position(|t| *t == active_tab.get())
+            .position(|tab| *tab == active_tab.get())
             .unwrap_or(0)
     };
-
     let active_pill_index = move || hover_index.get().unwrap_or_else(selected_index);
-
-    // Pill transform calculation using static table
     let pill_style = move || {
-        let idx = active_pill_index().min(PILL_STYLES.len() - 1);
-        PILL_STYLES[idx]
+        let index = active_pill_index().min(PILL_STYLES.len() - 1);
+        PILL_STYLES[index]
     };
 
-    let handle_keydown = move |ev: web_sys::KeyboardEvent| {
-        let key = ev.key();
+    Effect::new(move |_| {
+        let _ = active_tab.get();
+        set_is_swapping.set(true);
+        set_timeout(
+            move || set_is_swapping.set(false),
+            Duration::from_millis(180),
+        );
+    });
+
+    let close_menu = move || {
+        set_is_open.set(false);
+        set_hover_index.set(None);
+    };
+
+    let handle_keydown = move |event: KeyboardEvent| {
+        let key = event.key();
         if !is_open.get() {
             if matches!(key.as_str(), "ArrowDown" | "ArrowUp" | "Enter" | " ") {
-                ev.prevent_default();
+                event.prevent_default();
                 set_is_open.set(true);
                 set_hover_index.set(Some(selected_index()));
             }
-        } else {
-            match key.as_str() {
-                "Escape" => {
-                    ev.prevent_default();
-                    set_is_open.set(false);
-                    set_hover_index.set(None);
+            return;
+        }
+
+        match key.as_str() {
+            "Escape" => {
+                event.prevent_default();
+                close_menu();
+                if let Some(trigger) = trigger_ref.get() {
+                    let _ = trigger.focus();
                 }
-                "ArrowDown" => {
-                    ev.prevent_default();
-                    let cur = active_pill_index();
-                    set_hover_index.set(Some((cur + 1) % PayloadTab::ALL.len()));
-                }
-                "ArrowUp" => {
-                    ev.prevent_default();
-                    let cur = active_pill_index();
-                    set_hover_index.set(Some(if cur == 0 {
-                        PayloadTab::ALL.len() - 1
-                    } else {
-                        cur - 1
-                    }));
-                }
-                "Home" => {
-                    ev.prevent_default();
-                    set_hover_index.set(Some(0));
-                }
-                "End" => {
-                    ev.prevent_default();
-                    set_hover_index.set(Some(PayloadTab::ALL.len() - 1));
-                }
-                "Enter" | " " => {
-                    ev.prevent_default();
-                    let idx = active_pill_index().min(PayloadTab::ALL.len() - 1);
-                    active_tab.set(PayloadTab::ALL[idx]);
-                    set_is_open.set(false);
-                    set_hover_index.set(None);
-                }
-                _ => {}
             }
+            "Tab" => close_menu(),
+            "ArrowDown" => {
+                event.prevent_default();
+                let current = active_pill_index();
+                set_hover_index.set(Some((current + 1) % PayloadTab::ALL.len()));
+            }
+            "ArrowUp" => {
+                event.prevent_default();
+                let current = active_pill_index();
+                set_hover_index.set(Some(if current == 0 {
+                    PayloadTab::ALL.len() - 1
+                } else {
+                    current - 1
+                }));
+            }
+            "Home" => {
+                event.prevent_default();
+                set_hover_index.set(Some(0));
+            }
+            "End" => {
+                event.prevent_default();
+                set_hover_index.set(Some(PayloadTab::ALL.len() - 1));
+            }
+            "Enter" | " " => {
+                event.prevent_default();
+                let index = active_pill_index().min(PayloadTab::ALL.len() - 1);
+                active_tab.set(PayloadTab::ALL[index]);
+                close_menu();
+            }
+            _ => {}
         }
     };
 
     view! {
-        <div class="glide-select" on:keydown=handle_keydown>
-            // Backdrop for click-outside dismissal
+        <div
+            class="glide-select"
+            on:keydown=handle_keydown
+            data-swap=move || is_swapping.get().then_some("")
+        >
+            // Backdrop for click-outside dismissal.
             {move || if is_open.get() {
                 view! {
                     <div
                         class="fixed inset-0 z-40 bg-transparent cursor-default"
-                        on:click=move |_| {
-                            set_is_open.set(false);
-                            set_hover_index.set(None);
-                        }
+                        aria-hidden="true"
+                        on:click=move |_| close_menu()
                     />
                 }.into_any()
             } else {
                 view! { <span /> }.into_any()
             }}
 
-            // Trigger Chip Button
             <button
                 type="button"
+                node_ref=trigger_ref
                 role="combobox"
+                aria-label="Content type"
                 aria-haspopup="listbox"
-                aria-expanded=move || is_open.get()
+                aria-controls="payload-type-list"
+                aria-expanded=move || is_open.get().to_string()
+                aria-activedescendant=move || {
+                    is_open
+                        .get()
+                        .then(|| format!("payload-type-{}", active_pill_index()))
+                }
                 class="glide-select__trigger"
                 on:click=move |_| {
-                    set_is_open.update(|v| *v = !*v);
-                    set_hover_index.set(None);
+                    set_is_open.update(|open| *open = !*open);
+                    set_hover_index.set(Some(selected_index()));
                 }
             >
-                <span class="glide-select__label">
-                    {move || active_tab.get().label()}
+                <span class="glide-select__trigger-icon" aria-hidden="true">
+                    {move || view! { <PayloadIcon tab=active_tab.get() size=14 /> }}
                 </span>
+                <span class="glide-select__label">{move || active_tab.get().label()}</span>
                 <span class="glide-select__chevron" aria-hidden="true">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
+                    <ChevronDown size=12 />
                 </span>
             </button>
 
-            // Animated Dropdown Menu
             {move || if is_open.get() {
                 view! {
                     <div
@@ -180,45 +227,49 @@ pub fn GlideSelect(active_tab: RwSignal<PayloadTab>) -> impl IntoView {
                         data-align="right"
                     >
                         <div
+                            id="payload-type-list"
                             role="listbox"
+                            aria-label="Content type"
                             class="glide-select__list"
                             data-live=""
                             on:mouseleave=move |_| set_hover_index.set(None)
                         >
-                            // Gliding Pill Highlight
                             <span
                                 class="glide-select__pill"
                                 style=pill_style
                                 aria-hidden="true"
                             />
 
-                            // Menu Option Items
-                            {PayloadTab::ALL.into_iter().enumerate().map(|(i, tab)| {
+                            {PayloadTab::ALL.into_iter().enumerate().map(|(index, tab)| {
                                 let is_selected = move || active_tab.get() == tab;
                                 view! {
                                     <div
+                                        id=format!("payload-type-{index}")
                                         role="option"
-                                        aria-selected=is_selected
-                                        data-index=i
+                                        aria-selected=move || is_selected().to_string()
+                                        data-index=index
                                         class="glide-select__option"
-                                        on:mouseenter=move |_| set_hover_index.set(Some(i))
-                                        on:mouseover=move |_| set_hover_index.set(Some(i))
+                                        on:mouseenter=move |_| set_hover_index.set(Some(index))
+                                        on:mouseover=move |_| set_hover_index.set(Some(index))
                                         on:click=move |_| {
                                             active_tab.set(tab);
-                                            set_is_open.set(false);
-                                            set_hover_index.set(None);
+                                            close_menu();
                                         }
                                     >
+                                        <span class="glide-select__option-icon" aria-hidden="true">
+                                            <PayloadIcon tab=tab size=14 />
+                                        </span>
                                         <span class="glide-select__name">{tab.label()}</span>
                                         <span
                                             class="glide-select__check"
-                                            data-on=move || is_selected().then_some("")
-                                            style=move || if is_selected() { "visibility: visible;" } else { "visibility: hidden;" }
                                             aria-hidden="true"
+                                            style=move || if is_selected() {
+                                                "visibility: visible;"
+                                            } else {
+                                                "visibility: hidden;"
+                                            }
                                         >
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                                <polyline points="20 6 9 17 4 12"></polyline>
-                                            </svg>
+                                            <Check size=13 />
                                         </span>
                                     </div>
                                 }

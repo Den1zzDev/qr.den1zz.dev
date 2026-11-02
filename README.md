@@ -1,51 +1,51 @@
 # QR Code Studio
 
-QR Code Studio is a client-side QR code generator written in Rust and compiled to WebAssembly with Leptos. All generation, styling, and scan verification execute inside the browser sandbox. The generator sends zero data over the network.
+QR Code Studio is a QR code generator that runs in the browser. It is written in Rust and compiled to WebAssembly with Leptos. Generation, styling, contrast checks, and export all happen in the tab; the studio sends no payload data over the network.
 
 Live instance: [qr.den1zz.dev](https://qr.den1zz.dev)
 
-## Capabilities
+## What it does
 
-- **Payload Types**:
-  - **URL / Link**: Standard hyperlinks with optional tracking parameter stripping (`utm_*`, `fbclid`, `gclid`, `mc_eid`, etc.).
-  - **Plain Text**: Arbitrary raw text, notes, and messages without escaping.
-  - **Wi-Fi Credentials**: Standards-compliant ZXing format (`WIFI:S:...;T:WPA;P:...;;`) with support for WPA/WPA2/WPA3, WEP, unencrypted networks (`nopass`), hidden SSIDs, and automatic character escaping (`\`, `;`, `,`, `:`, `"`).
-  - **vCard 3.0 / 4.0 Contact Cards**: Full contact cards with structured name, company, job title, phone numbers (mobile/work), email, website, address, notes, and standard semicolon/newline escaping.
-  - **Email Drafts**: RFC 6068 `mailto:` links with recipient address, subject line, and multiline prefilled body with RFC 3986 percent-encoding.
-  - **Phone Numbers**: RFC 3966 `tel:` links compatible with native mobile and desktop phone dialers, preserving phone extension parameters (`;ext=`).
-  - **Geolocation Coordinates**: RFC 5870 `geo:` URI standard compatible with Apple Maps and Google Maps, with support for bounded latitude, longitude, and optional search/place labels (`?q=...`).
-  - **Cryptocurrency Payment URIs**: BIP-21 standard URI schemes for Bitcoin (`bitcoin:`), Ethereum (`ethereum:`), Solana (`solana:`), and Litecoin (`litecoin:`) with address, safe float-free normalized amount strings, and optional label/memo.
-- **Module and Eye Styling**:
-  - Modules: Square (with contiguous horizontal run merging), Dots, Rounded, Smooth, and Ente Classy.
-  - Eye frames: Square, Rounded, and Circle.
-  - Eye dots: Square, Rounded, and Circle.
-  - Colors: Independent hex colors for modules, eye frames, eye dots, and background, with transparent background support.
-  - Center logo: Embeds custom PNG/SVG logos with automatic error correction boost to Level H.
-- **Scannability Validation**:
-  - Real-time WCAG contrast ratio calculations for module, eye frame, and eye dot against background.
-  - In-browser scan verifier using the `rqrr` engine directly against generated matrices before export.
-- **Export Options**:
-  - Raster PNG: 512×512, 1024×1024, or 2048×2048 resolution with embedded tEXt metadata chunks.
-  - Direct PNG Clipboard Copy: Clipboard copy via Async Clipboard API (`navigator.clipboard.write`).
-  - Vector SVG: Standalone SVG download or raw SVG markup clipboard copy.
-- **Offline PWA**:
-  - Service Worker (`sw.js`) with 2500ms network-first fallback and Web Application Manifest (`manifest.webmanifest`) for offline functionality and desktop/mobile installation.
+- **Payload types**: links, plain text, Wi-Fi credentials, vCard 3.0 contacts, email drafts, phone numbers, location coordinates, and crypto payment URIs.
+- **Styling**: four module shapes, three eye frame shapes, three eye dot shapes, separate colours for modules, eye frame, eye dot, and background, a transparent background, and an optional centre logo.
+- **Contrast checks**: each coloured region is measured against the background. A region below 3:1 is marked amber in the palette and in the preview.
+- **Exports**: PNG at 512, 1024, or 2048 pixels, PNG copied to the clipboard, standalone SVG, and raw SVG copied to the clipboard.
+- **Offline use**: a service worker caches the site after the first load, and the page installs as a PWA.
+- **Keyboard support**: native radio and file inputs, a keyboard-operable content-type menu, a skip link, and visible focus rings.
+- **Mobile quick actions**: below 1024 pixels, a fixed bar shows the current code and the PNG export once the preview scrolls out of view.
+
+The studio checks contrast. It does not decode the generated code in the browser. The Axum server crate exposes a separate `POST /api/verify` endpoint that rasterises and decodes an image with `rqrr`; the static deployment does not call it. Test-scan exported files before a print run.
+
+## Payload details
+
+| Type | Format | Notes |
+|---|---|---|
+| Link | URL | Adds `https://` when the scheme is missing. Finds and removes `utm_*`, `fbclid`, `gclid`, and `mc_eid` tracking parameters. |
+| Text | UTF-8 | Preserves line breaks, emoji, and non-Latin scripts. |
+| Wi-Fi | `WIFI:S:...;T:...;P:...;;` | WPA, WEP, and open networks. Supports hidden SSIDs and escapes `\`, `;`, `,`, `:`, and `"`. |
+| Contact | vCard 3.0 | Structured name, company, title, phone, email, website, address, and note. |
+| Email | `mailto:` | RFC 6068 percent-encoding for the recipient, subject, and multiline body. |
+| Phone | `tel:` | RFC 3966, including `;ext=` parameters. |
+| Location | `geo:` | RFC 5870 coordinates with an optional place label. |
+| Crypto | BIP-21-style URI | Bitcoin, Ethereum, Solana, Monero, and Litecoin. Amounts are normalised without floating-point arithmetic. |
+
+The preview footer summarises Wi-Fi, vCard, email, and crypto payloads instead of echoing them, so a Wi-Fi password or an email body does not appear in plain text.
 
 ## Workspace layout
-
-The repository is structured as a Cargo workspace:
 
 ```
 .
 ├── crates
-│   ├── qr-core      # Matrix generation, query sanitizer, SVG renderer, WCAG verifier
-│   ├── qr-frontend  # Leptos 0.7 hybrid frontend (WASM hydration + SSR pre-rendering)
-│   └── qr-server    # Axum HTTP server with streaming SSR and API endpoints
-├── vercel-build.sh  # Build script for static edge deployment
-├── vercel.json      # Header and routing configuration for Vercel
-├── Cargo.toml       # Workspace root manifest
-└── README.md
+│   ├── qr-core      # Payload encoders, QR matrix, SVG renderer, PNG export, contrast, verifier
+│   ├── qr-frontend  # Leptos application, pages, and browser helpers
+│   └── qr-server    # Axum server with streaming SSR and verification endpoints
+├── crates/qr-frontend/input.css       # Tailwind source and the component layer
+├── crates/qr-frontend/public          # Icons, manifest, service worker, font, social image
+├── vercel-build.sh                    # Static build for Vercel
+└── vercel.json                        # Header and routing configuration
 ```
+
+The site is a single page. It uses a two-column workspace above 1024 pixels and a single column below that. The generated code sits in a square stage with a four-module quiet zone, and the stage switches to a checkerboard when the background is transparent. On phones and tablets, a fixed quick-action bar keeps the PNG export reachable while the styling panels are in view.
 
 ## Prerequisites
 
@@ -54,67 +54,112 @@ The repository is structured as a Cargo workspace:
   ```bash
   rustup target add wasm32-unknown-unknown
   ```
-- [`wasm-bindgen-cli`](https://github.com/rustwasm/wasm-bindgen) (`0.2.128`):
+- `wasm-bindgen-cli` 0.2.128. The CLI version must match the `wasm-bindgen` crate in `Cargo.lock`:
   ```bash
   cargo install wasm-bindgen-cli --version 0.2.128
   ```
+- Node.js 20 or newer for the Tailwind build.
 
-## Getting started
+## Build the static site
 
-### Build and serve the static site locally
-
-1. Compile the WebAssembly bundle and pre-render the initial HTML shell:
+1. Compile the stylesheet:
    ```bash
-   # Build WASM client
+   npx --yes tailwindcss@3 \
+     -i crates/qr-frontend/input.css \
+     --content "./crates/qr-frontend/src/**/*.rs" \
+     --minify \
+     -o crates/qr-frontend/dist/style.css
+   ```
+
+2. Compile the WebAssembly client:
+   ```bash
    cargo build -p qr-frontend --target wasm32-unknown-unknown --features hydrate
    mkdir -p crates/qr-frontend/dist
-   wasm-bindgen --target web --out-dir crates/qr-frontend/dist --no-typescript target/wasm32-unknown-unknown/debug/qr_frontend.wasm
+   wasm-bindgen \
+     --target web \
+     --out-dir crates/qr-frontend/dist \
+     --no-typescript \
+     target/wasm32-unknown-unknown/debug/qr_frontend.wasm
+   ```
 
-   # Pre-render initial HTML shell via Rust SSR
+3. Copy the static assets and pre-render the HTML shell:
+   ```bash
+   cp -r crates/qr-frontend/public/* crates/qr-frontend/dist/
    cargo run -p qr-frontend --bin prerender --features ssr -- crates/qr-frontend/dist
    ```
 
-2. Serve the pre-rendered static output locally on port `4321`:
+4. Serve the output:
    ```bash
    python3 -m http.server 4321 --directory crates/qr-frontend/dist
    ```
-   Open `http://localhost:4321` in your browser.
 
-### Run with the Axum SSR server
+Open `http://localhost:4321`. Use a local server rather than opening `index.html` directly, because WebAssembly and the clipboard need an HTTP origin.
 
-To compile the client assets and run the Axum server locally:
+`./vercel-build.sh` runs the same steps in release mode, then optimises the bundle with `wasm-opt` and minifies the JavaScript with `esbuild`.
+
+## Run the Axum server
+
+The server renders the same application and adds the QR API endpoints. Build the stylesheet and copy the static assets into `dist` first, because the server serves `/style.css` and `/fonts` from there.
 
 ```bash
-# Build WASM client into the server's package directory
+npx --yes tailwindcss@3 \
+  -i crates/qr-frontend/input.css \
+  --content "./crates/qr-frontend/src/**/*.rs" \
+  --minify \
+  -o crates/qr-frontend/dist/style.css
+cp -r crates/qr-frontend/public/* crates/qr-frontend/dist/
+
 cargo build -p qr-frontend --target wasm32-unknown-unknown --features hydrate
 mkdir -p crates/qr-server/pkg
-wasm-bindgen --target web --out-dir crates/qr-server/pkg --no-typescript target/wasm32-unknown-unknown/debug/qr_frontend.wasm
+wasm-bindgen \
+  --target web \
+  --out-dir crates/qr-server/pkg \
+  --no-typescript \
+  target/wasm32-unknown-unknown/debug/qr_frontend.wasm
 
-# Run the Axum server (binds to http://127.0.0.1:4321)
 cargo run -p qr-server
 ```
 
-### Run tests
+The server listens on `http://127.0.0.1:4321` by default. Set `PORT` to change it, `PKG_DIR` to point at a different client bundle, `STYLE_PATH` to override the stylesheet, and `FONT_DIR` to override the font directory.
 
-Run the workspace test suite:
+Endpoints:
+
+- `GET /health` returns `OK`.
+- `POST /api/generate/vector` accepts a payload and render configuration and returns an SVG.
+- `POST /api/verify` accepts a base64 image and the expected payload, then returns a verification report.
+
+## Checks
+
+Run the same checks as CI before opening a pull request:
 
 ```bash
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
+cargo check --workspace --all-targets
 ```
+
+The core crate has unit tests for URL sanitising, payload escaping, amount normalisation, contrast maths, SVG output, PNG metadata, and scan verification.
 
 ## Deployment
 
-The project builds to static files for CDN hosting. The repository includes automated build configuration for Vercel:
+The project builds to static files and deploys on Vercel:
 
 - Build command: `./vercel-build.sh`
 - Output directory: `crates/qr-frontend/dist`
 
-`vercel.json` configures caching headers for immutable wasm and js assets and sets security headers (`nosniff`, `DENY` framing).
+`vercel.json` sets caching for hashed assets, disables framing, sends `nosniff`, and applies a content security policy that allows the inline bootstrap, the self-hosted font, the WebAssembly module, and local image data only. The service worker uses a network-first strategy with a 2.5-second timeout and falls back to the cache when offline.
+
+## Fonts and assets
+
+The studio self-hosts Maple Mono as a subsetted variable WOFF2. The font is licensed under the SIL Open Font License 1.1, and the licence text ships at `crates/qr-frontend/public/fonts/OFL.txt`.
+
+The icons are inline SVG drawn on a 24-unit grid with a 1.6-unit stroke. The social image and PWA icons are committed under `crates/qr-frontend/public`.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for code structure, guidelines, and pull request procedures.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the architecture, local workflow, and pull request checklist.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+MIT. See [LICENSE](LICENSE).

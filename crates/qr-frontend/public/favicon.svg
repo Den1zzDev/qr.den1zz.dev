@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="QR Studio">
+  <rect width="32" height="32" fill="#000000"/>
+  <g fill="none" stroke="#00f0ff" stroke-width="2.2">
+    <rect x="4" y="4" width="8" height="8"/>
+    <rect x="20" y="4" width="8" height="8"/>
+    <rect x="4" y="20" width="8" height="8"/>
+  </g>
+  <g fill="#00f0ff">
+    <rect x="6.4" y="6.4" width="3.2" height="3.2"/>
+    <rect x="22.4" y="6.4" width="3.2" height="3.2"/>
+    <rect x="6.4" y="22.4" width="3.2" height="3.2"/>
+    <rect x="20" y="20" width="3" height="3"/>
+    <rect x="25" y="20" width="3" height="3"/>
+    <rect x="20" y="25" width="3" height="3"/>
+  </g>
+  <rect x="25" y="25" width="3" height="3" fill="#008b99"/>
+</svg>
