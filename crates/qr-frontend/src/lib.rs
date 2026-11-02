@@ -12,7 +12,7 @@ pub use app::App;
 
 /// Hydrates the server-rendered application in the browser.
 #[cfg(feature = "hydrate")]
-#[wasm_bindgen::prelude::wasm_bindgen(start)]
+#[wasm_bindgen::prelude::wasm_bindgen]
 pub fn start_hydrate() {
     console_error_panic_hook::set_once();
     leptos::mount::hydrate_body(App);
@@ -20,7 +20,7 @@ pub fn start_hydrate() {
 
 /// Mounts the application in the browser without server-rendered markup.
 #[cfg(feature = "csr")]
-#[wasm_bindgen::prelude::wasm_bindgen(start)]
+#[wasm_bindgen::prelude::wasm_bindgen]
 pub fn start_csr() {
     console_error_panic_hook::set_once();
     leptos::mount::mount_to_body(App);

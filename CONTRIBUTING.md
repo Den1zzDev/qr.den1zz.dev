@@ -1,81 +1,86 @@
 # Contributing to QR Code Studio
 
-Thank you for your interest in contributing to QR Code Studio.
-
 ## Workspace architecture
 
-This repository is organized as a Cargo workspace with three crates:
+The repository is a Cargo workspace with three crates:
 
-- `crates/qr-core`: Core library containing matrix calculation, URL tracking sanitizer, vector SVG rendering, WCAG contrast verification, and PNG rasterization.
-- `crates/qr-frontend`: Leptos WebAssembly application supporting client-side hydration (`hydrate`) and compile-time pre-rendering (`ssr`).
-- `crates/qr-server`: Axum HTTP server providing Leptos streaming SSR and QR processing endpoints.
+- `crates/qr-core`: payload encoders, QR matrix construction, SVG rendering, PNG export, contrast maths, and scan verification. Public items carry doc comments and the crate denies missing docs.
+- `crates/qr-frontend`: the Leptos application. `src/app.rs` owns the page shell and memo graph, `src/studio_state.rs` owns the reactive studio state, `src/components/` holds one file per panel plus the mobile quick-action bar, and `src/browser.rs` isolates clipboard, canvas, and download APIs.
+- `crates/qr-server`: an Axum server with streaming SSR and JSON endpoints for vector generation and image verification. The deployed site is static and does not use it.
+
+The frontend has three feature sets:
+
+- `hydrate`: browser bundle that takes over the pre-rendered HTML.
+- `ssr`: server and pre-renderer build.
+- `csr`: client-only mount for local experiments.
 
 ## Prerequisites
 
-You need the following tools installed:
-
-- Rust stable toolchain: install via [rustup](https://rustup.rs/)
-- WebAssembly compilation target:
+- Rust stable toolchain from [rustup](https://rustup.rs/)
+- The WebAssembly target:
   ```bash
   rustup target add wasm32-unknown-unknown
   ```
-- `wasm-bindgen-cli` (v0.2.128):
+- `wasm-bindgen-cli` 0.2.128. The CLI and the `wasm-bindgen` crate in `Cargo.lock` must match exactly:
   ```bash
   cargo install wasm-bindgen-cli --version 0.2.128
   ```
+- Node.js 20 or newer for Tailwind and the bundle minifier.
 
 ## Local development
 
-### Building the WebAssembly frontend
-
-To compile the frontend and generate the pre-rendered static site:
+### Build the static site
 
 ```bash
+npx --yes tailwindcss@3 \
+  -i crates/qr-frontend/input.css \
+  --content "./crates/qr-frontend/src/**/*.rs" \
+  --minify \
+  -o crates/qr-frontend/dist/style.css
+
 cargo build -p qr-frontend --target wasm32-unknown-unknown --features hydrate
 mkdir -p crates/qr-frontend/dist
-wasm-bindgen --target web --out-dir crates/qr-frontend/dist --no-typescript target/wasm32-unknown-unknown/debug/qr_frontend.wasm
+wasm-bindgen \
+  --target web \
+  --out-dir crates/qr-frontend/dist \
+  --no-typescript \
+  target/wasm32-unknown-unknown/debug/qr_frontend.wasm
+
+cp -r crates/qr-frontend/public/* crates/qr-frontend/dist/
 cargo run -p qr-frontend --bin prerender --features ssr -- crates/qr-frontend/dist
-```
-
-You can serve `crates/qr-frontend/dist` with any static web server:
-
-```bash
 python3 -m http.server 4321 --directory crates/qr-frontend/dist
 ```
 
-### Running the Axum server
+Open `http://localhost:4321`. The page must be served over HTTP, not opened as a file, because WebAssembly streaming and the clipboard require an origin.
 
-To run the Axum server with streaming SSR and static client assets:
+### Run the Axum server
+
+Build the stylesheet and copy the static assets first. The server serves `/style.css` and `/fonts` from `crates/qr-frontend/dist`.
 
 ```bash
+npx --yes tailwindcss@3 \
+  -i crates/qr-frontend/input.css \
+  --content "./crates/qr-frontend/src/**/*.rs" \
+  --minify \
+  -o crates/qr-frontend/dist/style.css
+cp -r crates/qr-frontend/public/* crates/qr-frontend/dist/
+
 cargo build -p qr-frontend --target wasm32-unknown-unknown --features hydrate
 mkdir -p crates/qr-server/pkg
-wasm-bindgen --target web --out-dir crates/qr-server/pkg --no-typescript target/wasm32-unknown-unknown/debug/qr_frontend.wasm
+wasm-bindgen \
+  --target web \
+  --out-dir crates/qr-server/pkg \
+  --no-typescript \
+  target/wasm32-unknown-unknown/debug/qr_frontend.wasm
+
 cargo run -p qr-server
 ```
 
-The server listens on `http://127.0.0.1:4321`.
+The server listens on port 4321 by default. Set `PORT`, `PKG_DIR`, `STYLE_PATH`, or `FONT_DIR` to override the defaults. The server warns at startup when the stylesheet is missing.
 
-## Testing
+## Checks
 
-Run the workspace test suite before submitting a pull request:
-
-```bash
-cargo test --workspace
-```
-
-Ensure all workspace crates compile without errors or warnings:
-
-```bash
-cargo check --workspace --all-targets
-```
-
-## Code style
-
-The workspace follows the [Google Rust Style Guide](https://google.github.io/styleguide/rustguide.html).
-Formatting is configured in [`rustfmt.toml`](rustfmt.toml) with a 100-column limit.
-
-Before submitting a pull request, verify formatting, lints, and tests:
+Run these before opening a pull request:
 
 ```bash
 cargo fmt --all -- --check
@@ -83,18 +88,46 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 
+CI also builds the WebAssembly bundle and pre-renders the page, so a change that only compiles for the host target still passes `cargo check` but fails CI. Build the wasm target locally when you touch the frontend.
+
+## Code style
+
+The workspace follows the [Google Rust Style Guide](https://google.github.io/styleguide/rustguide.html). Formatting is configured in [`rustfmt.toml`](rustfmt.toml) with a 100-column limit.
+
 Conventions worth knowing:
 
-- Public items in `qr-core` carry doc comments; the crate enables the `missing_docs` lint.
-- Types are imported directly, while free functions are called through their module
-  (for example `vector::render_svg`).
-- Fallible constructors are named `try_new`.
-- Public enums and metadata structs are `#[non_exhaustive]`.
+- Public items in `qr-core` carry doc comments, and the crate enables the `missing_docs` lint.
+- Import types directly and call free functions through their module, for example `vector::render_svg`.
+- Name fallible constructors `try_new`.
+- Mark public enums and metadata structs `#[non_exhaustive]`.
 - `unsafe` code is forbidden across the workspace.
+- Keep the browser APIs in `src/browser.rs`; do not scatter `web_sys` calls through components.
+- Keep panel-level state in `StudioState` and derived values in memos in `app.rs`.
+
+## Design system
+
+The visual system is documented in [DESIGN.md](DESIGN.md), with the product record in [PRODUCT.md](PRODUCT.md). Read both before changing the interface.
+
+The short version: AMOLED black, one cyan signal colour, a single monospace family, flat panels with hairline borders, and amber for a failed measurement. Every styled control must show its cost, whether that is a contrast ratio, a byte count, or an error message. The preview stays next to the controls on desktop and a fixed quick-action bar takes over once it scrolls away on smaller screens.
+
+When you add a control:
+
+- Use a native input where one exists. Style it rather than rebuilding it.
+- Give it a label, a focus state, and a disabled state.
+- Use the `--line-control` border token, which clears the 3:1 non-text contrast floor.
+- Keep touch targets at least 24 CSS pixels in both axes.
+- Respect `prefers-reduced-motion`.
+
+## Assets
+
+- The Maple Mono WOFF2 is subsetted to Latin, punctuation, arrows, and the symbols used by the UI. The licence ships beside it at `crates/qr-frontend/public/fonts/OFL.txt`.
+- Icons live in `crates/qr-frontend/src/components/icons.rs` and use a 24-unit view box with a 1.6-unit stroke.
+- PWA icons and the social image are committed under `crates/qr-frontend/public`. Regenerate them when the wordmark or the default code changes.
 
 ## Pull request guidelines
 
-1. Fork the repository and create a branch from `main`.
-2. Keep pull requests focused on a single feature or fix.
-3. Add unit tests for any new logic in `crates/qr-core`.
-4. Fill out the pull request template with details on your changes and manual testing.
+1. Branch from `main` and keep the change focused.
+2. Add unit tests for new logic in `qr-core`.
+3. Test the interface at 320, 390, 768, 1024, and 1440 pixels wide.
+4. Check keyboard navigation and the generated PNG and SVG before submitting.
+5. Fill out the pull request template with the payload types and controls you tested.

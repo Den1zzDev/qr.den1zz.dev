@@ -1,7 +1,12 @@
 //! Palette controls for module, finder, and background colours.
 
 use leptos::prelude::*;
+use qr_core::contrast::MIN_GRAPHIC_CONTRAST;
 
+use crate::components::icons::Check;
+use crate::components::icons::Pipette;
+use crate::components::icons::Warning;
+use crate::studio_state::ContrastRatios;
 use crate::studio_state::StudioState;
 
 /// Colours offered for modules and finder patterns.
@@ -11,156 +16,255 @@ const CODE_PRESETS: [&str; 4] = ["#000000", "#008b99", "#00f0ff", "#ffffff"];
 const DOT_PRESETS: [&str; 4] = ["#008b99", "#00f0ff", "#000000", "#ffffff"];
 
 /// Colours offered for the background.
-const BACKGROUND_PRESETS: [&str; 4] = ["#ffffff", "#000000", "#f8fafc", "#0a0a0a"];
+const BACKGROUND_PRESETS: [&str; 3] = ["#ffffff", "#f2f2f2", "#000000"];
+
+/// Renders a contrast badge for `value`.
+fn ratio_badge(value: f32, label: &'static str) -> AnyView {
+    let passes = value >= MIN_GRAPHIC_CONTRAST;
+    let description = if passes {
+        format!("{label} contrast {value:.1} to 1, meets the 3 to 1 minimum")
+    } else {
+        format!("{label} contrast {value:.1} to 1, below the 3 to 1 minimum")
+    };
+
+    view! {
+        <span
+            class=if passes { "ratio ratio--pass" } else { "ratio ratio--fail" }
+            aria-label=description.clone()
+            title=description
+        >
+            {if passes {
+                view! { <Check size=10 /> }.into_any()
+            } else {
+                view! { <Warning size=10 /> }.into_any()
+            }}
+            <span class="tabular">{format!("{value:.1}:1")}</span>
+        </span>
+    }
+    .into_any()
+}
+
+/// Native colour picker styled as a swatch.
+#[component]
+fn CustomColor(
+    value: RwSignal<String>,
+    label: &'static str,
+    disabled: Signal<bool>,
+) -> impl IntoView {
+    view! {
+        <label
+            class=move || if disabled.get() { "color-custom is-disabled" } else { "color-custom" }
+            title=move || format!("Pick a custom colour ({})", value.get())
+        >
+            <span
+                class="color-custom__chip"
+                style=move || format!("background-color: {}", value.get())
+                aria-hidden="true"
+            ></span>
+            <span class="color-custom__icon" aria-hidden="true">
+                <Pipette size=9 />
+            </span>
+            <input
+                type="color"
+                class="color-custom__input"
+                aria-label=format!("{label} custom colour")
+                disabled=move || disabled.get()
+                prop:value=move || value.get()
+                on:input=move |event| value.set(event_target_value(&event))
+            />
+        </label>
+    }
+}
+
+/// Preset swatches for one colour role.
+#[component]
+fn Swatches(
+    value: RwSignal<String>,
+    presets: &'static [&'static str],
+    label: &'static str,
+    disabled: Signal<bool>,
+) -> impl IntoView {
+    view! {
+        <div class="color-row__swatches">
+            {presets.iter().copied().map(|preset| {
+                let is_selected = move || value.get().eq_ignore_ascii_case(preset);
+                view! {
+                    <button
+                        type="button"
+                        class=move || if is_selected() { "swatch is-selected" } else { "swatch" }
+                        style=format!("background-color: {preset}")
+                        aria-label=format!("Set {label} to {preset}")
+                        aria-pressed=move || is_selected().to_string()
+                        title=preset
+                        disabled=move || disabled.get()
+                        on:click=move |_| value.set(preset.to_string())
+                    >
+                        <span class="swatch__check" aria-hidden="true">
+                            <Check size=12 />
+                        </span>
+                    </button>
+                }
+            }).collect_view()}
+        </div>
+    }
+}
 
 /// Colour pickers for every coloured region of the code.
 #[component]
-pub(crate) fn PalettePanel(state: StudioState) -> impl IntoView {
+pub(crate) fn PalettePanel(state: StudioState, contrast: Memo<ContrastRatios>) -> impl IntoView {
+    let transparent = Signal::derive(move || state.is_transparent_background.get());
+
     view! {
-        <div class="glass-panel p-4 sm:p-5 space-y-4">
-            <h3 class="text-xs font-semibold uppercase tracking-wider text-[#a0a0a0]">
-                "Colors & Palette"
-            </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="space-y-1.5">
-                    <div class="flex items-center justify-between text-xs">
-                        <span class="text-[#a0a0a0]">"Code / Modules"</span>
-                        <span class="font-mono text-[11px] text-[#555555]">
-                            {move || state.module_color.get()}
-                        </span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <input
-                            type="color"
-                            class="w-8 h-8 rounded cursor-pointer bg-transparent border-0"
-                            prop:value=move || state.module_color.get()
-                            on:input=move |event| {
-                                state.module_color.set(event_target_value(&event));
-                            }
-                        />
-                        <div class="flex gap-1.5 flex-wrap">
-                            {CODE_PRESETS.into_iter().map(|preset| {
-                                view! {
-                                    <button
-                                        class="w-6 h-6 rounded-full border border-[rgba(255,255,255,0.2)] transition-transform hover:scale-110"
-                                        style=format!("background-color: {preset}")
-                                        title=format!("Set color to {preset}")
-                                        on:click=move |_| state.module_color.set(preset.to_string())
-                                    />
-                                }
-                            }).collect_view()}
+        <div class="panel">
+            <div class="panel__head">
+                <h2 class="panel__title">"Palette"</h2>
+                <button
+                    type="button"
+                    class="link-button"
+                    on:click=move |_| state.reset_palette()
+                >
+                    "Reset"
+                </button>
+            </div>
+            <div class="panel__body space-y-4">
+                <div class="palette-grid">
+                    <div class="color-row">
+                        <div class="color-row__head">
+                            <span class="color-row__name">"Modules"</span>
+                            <span class="flex items-center gap-2">
+                                {move || ratio_badge(contrast.get().modules, "Module")}
+                                <span class="color-row__hex">{move || state.module_color.get()}</span>
+                            </span>
                         </div>
+                        <CustomColor
+                            value=state.module_color
+                            label="Module colour"
+                            disabled=Signal::derive(|| false)
+                        />
+                        <Swatches
+                            value=state.module_color
+                            presets=&CODE_PRESETS
+                            label="modules"
+                            disabled=Signal::derive(|| false)
+                        />
+                    </div>
+
+                    <div class="color-row">
+                        <div class="color-row__head">
+                            <span class="color-row__name">"Eye frame"</span>
+                            <span class="flex items-center gap-2">
+                                {move || ratio_badge(contrast.get().eye_frame, "Eye frame")}
+                                <button
+                                    type="button"
+                                    class="link-button"
+                                    title="Copy the module colour"
+                                    disabled=move || {
+                                        state.eye_color.get() == state.module_color.get()
+                                    }
+                                    on:click=move |_| state.eye_color.set(state.module_color.get())
+                                >
+                                    "= Modules"
+                                </button>
+                            </span>
+                        </div>
+                        <CustomColor
+                            value=state.eye_color
+                            label="Eye frame colour"
+                            disabled=Signal::derive(|| false)
+                        />
+                        <Swatches
+                            value=state.eye_color
+                            presets=&CODE_PRESETS
+                            label="eye frame"
+                            disabled=Signal::derive(|| false)
+                        />
+                    </div>
+
+                    <div class="color-row">
+                        <div class="color-row__head">
+                            <span class="color-row__name">"Eye dot"</span>
+                            <span class="flex items-center gap-2">
+                                {move || ratio_badge(contrast.get().eye_dot, "Eye dot")}
+                                <button
+                                    type="button"
+                                    class="link-button"
+                                    title="Copy the eye frame colour"
+                                    disabled=move || {
+                                        state.dot_color.get() == state.eye_color.get()
+                                    }
+                                    on:click=move |_| state.dot_color.set(state.eye_color.get())
+                                >
+                                    "= Frame"
+                                </button>
+                            </span>
+                        </div>
+                        <CustomColor
+                            value=state.dot_color
+                            label="Eye dot colour"
+                            disabled=Signal::derive(|| false)
+                        />
+                        <Swatches
+                            value=state.dot_color
+                            presets=&DOT_PRESETS
+                            label="eye dot"
+                            disabled=Signal::derive(|| false)
+                        />
+                    </div>
+
+                    <div class="color-row">
+                        <div class="color-row__head">
+                            <span class="color-row__name">"Background"</span>
+                            <label class="check check--compact">
+                                <input
+                                    type="checkbox"
+                                    prop:checked=move || state.is_transparent_background.get()
+                                    on:change=move |event| {
+                                        state.is_transparent_background.set(event_target_checked(&event));
+                                    }
+                                />
+                                <span>"Transparent"</span>
+                            </label>
+                        </div>
+                        <CustomColor
+                            value=state.background_color
+                            label="Background colour"
+                            disabled=transparent
+                        />
+                        <Swatches
+                            value=state.background_color
+                            presets=&BACKGROUND_PRESETS
+                            label="background"
+                            disabled=transparent
+                        />
                     </div>
                 </div>
 
-                <div class="space-y-1.5">
-                    <div class="flex items-center justify-between text-xs">
-                        <span class="text-[#a0a0a0]">"Eye Frame"</span>
-                        <button
-                            class="text-[11px] text-[#00f0ff] hover:underline"
-                            on:click=move |_| state.eye_color.set(state.module_color.get())
-                        >
-                            "Match Code"
-                        </button>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <input
-                            type="color"
-                            class="w-8 h-8 rounded cursor-pointer bg-transparent border-0"
-                            prop:value=move || state.eye_color.get()
-                            on:input=move |event| {
-                                state.eye_color.set(event_target_value(&event));
-                            }
-                        />
-                        <div class="flex gap-1.5 flex-wrap">
-                            {CODE_PRESETS.into_iter().map(|preset| {
-                                view! {
-                                    <button
-                                        class="w-6 h-6 rounded-full border border-[rgba(255,255,255,0.2)] transition-transform hover:scale-110"
-                                        style=format!("background-color: {preset}")
-                                        title=format!("Set color to {preset}")
-                                        on:click=move |_| state.eye_color.set(preset.to_string())
-                                    />
-                                }
-                            }).collect_view()}
-                        </div>
-                    </div>
-                </div>
+                {move || {
+                    let ratios = contrast.get();
+                    let failures = ratios.failures();
+                    if failures == 0 {
+                        view! { <span /> }.into_any()
+                    } else {
+                        view! {
+                            <p class="ratio ratio--fail w-full justify-start gap-1.5 py-1.5">
+                                <Warning size=12 />
+                                {if failures == 1 {
+                                    "1 region is below the 3:1 minimum.".to_string()
+                                } else {
+                                    format!("{failures} regions are below the 3:1 minimum.")
+                                }}
+                            </p>
+                        }.into_any()
+                    }
+                }}
 
-                <div class="space-y-1.5">
-                    <div class="flex items-center justify-between text-xs">
-                        <span class="text-[#a0a0a0]">"Eye Dot"</span>
-                        <button
-                            class="text-[11px] text-[#00f0ff] hover:underline"
-                            on:click=move |_| state.dot_color.set(state.eye_color.get())
-                        >
-                            "Match Frame"
-                        </button>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <input
-                            type="color"
-                            class="w-8 h-8 rounded cursor-pointer bg-transparent border-0"
-                            prop:value=move || state.dot_color.get()
-                            on:input=move |event| {
-                                state.dot_color.set(event_target_value(&event));
-                            }
-                        />
-                        <div class="flex gap-1.5 flex-wrap">
-                            {DOT_PRESETS.into_iter().map(|preset| {
-                                view! {
-                                    <button
-                                        class="w-6 h-6 rounded-full border border-[rgba(255,255,255,0.2)] transition-transform hover:scale-110"
-                                        style=format!("background-color: {preset}")
-                                        title=format!("Set color to {preset}")
-                                        on:click=move |_| state.dot_color.set(preset.to_string())
-                                    />
-                                }
-                            }).collect_view()}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="space-y-1.5">
-                    <div class="flex items-center justify-between text-xs">
-                        <span class="text-[#a0a0a0]">"Background"</span>
-                        <label class="flex items-center gap-1.5 cursor-pointer text-[11px] text-[#00f0ff]">
-                            <input
-                                type="checkbox"
-                                class="rounded accent-[#00f0ff] prec"
-                                prop:checked=move || state.is_transparent_background.get()
-                                on:change=move |event| {
-                                    state.is_transparent_background.set(event_target_checked(&event));
-                                }
-                            />
-                            <span>"Transparent"</span>
-                        </label>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <input
-                            type="color"
-                            class="w-8 h-8 rounded cursor-pointer bg-transparent border-0 disabled:opacity-40"
-                            disabled=move || state.is_transparent_background.get()
-                            prop:value=move || state.background_color.get()
-                            on:input=move |event| {
-                                state.background_color.set(event_target_value(&event));
-                            }
-                        />
-                        <div class="flex gap-1.5 flex-wrap">
-                            {BACKGROUND_PRESETS.into_iter().map(|preset| {
-                                view! {
-                                    <button
-                                        class="w-6 h-6 rounded-full border border-[rgba(255,255,255,0.2)] transition-transform hover:scale-110 disabled:opacity-30"
-                                        disabled=move || state.is_transparent_background.get()
-                                        style=format!("background-color: {preset}")
-                                        title=format!("Set color to {preset}")
-                                        on:click=move |_| state.background_color.set(preset.to_string())
-                                    />
-                                }
-                            }).collect_view()}
-                        </div>
-                    </div>
-                </div>
+                <p class="field-hint">
+                    {move || if transparent.get() {
+                        "Contrast is checked against white. Transparent exports need a light surface."
+                    } else {
+                        "Contrast is measured against the background colour."
+                    }}
+                </p>
             </div>
         </div>
     }

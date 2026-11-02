@@ -32,6 +32,18 @@ pub enum EccLevel {
 }
 
 impl EccLevel {
+    /// Returns the label used by the QR specification (`L`, `M`, `Q`, `H`).
+    #[must_use]
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Auto => "Auto",
+            Self::L => "L",
+            Self::M => "M",
+            Self::Q => "Q",
+            Self::H => "H",
+        }
+    }
+
     /// Resolves `self` against `overlay`, returning both the concrete level and
     /// the corresponding `qrcode` level.
     fn resolve(self, overlay: Overlay) -> (Self, EcLevel) {
@@ -261,6 +273,15 @@ mod tests {
             QrMatrix::try_new("", EccLevel::Auto, Overlay::None).is_ok(),
             "empty payloads are valid QR content"
         );
+    }
+
+    #[test]
+    fn ecc_levels_have_specification_labels() {
+        assert_eq!(EccLevel::L.label(), "L");
+        assert_eq!(EccLevel::M.label(), "M");
+        assert_eq!(EccLevel::Q.label(), "Q");
+        assert_eq!(EccLevel::H.label(), "H");
+        assert_eq!(EccLevel::Auto.label(), "Auto");
     }
 
     #[test]

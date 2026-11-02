@@ -147,7 +147,7 @@ impl Default for VectorRenderConfig {
     fn default() -> Self {
         Self {
             scale: 20.0,
-            margin_modules: 2,
+            margin_modules: 4,
             module_shape: ModuleShape::Classy,
             eye_frame_shape: EyeFrameShape::Rounded,
             eye_dot_shape: EyeDotShape::Circle,
@@ -719,6 +719,21 @@ mod tests {
     }
 
     #[test]
+    fn default_quiet_zone_is_four_modules() {
+        let matrix = QrMatrix::try_new("https://den1zz.dev", EccLevel::M, Overlay::None)
+            .expect("URL should encode");
+        let config = VectorRenderConfig::default();
+        let expected_width = (matrix.size + 8) as f32 * config.scale;
+        let svg = render_svg(&matrix, &config);
+
+        assert_eq!(config.margin_modules, 4);
+        assert!(
+            svg.contains(&format!("width=\"{expected_width}\"")),
+            "SVG reserves a four-module quiet zone on every side"
+        );
+    }
+
+    #[test]
     fn square_modules_merge_horizontal_runs() {
         let matrix = QrMatrix::try_new("https://den1zz.dev", EccLevel::M, Overlay::None)
             .expect("URL should encode");
@@ -754,6 +769,27 @@ mod tests {
             let svg = render_svg(&matrix, &config);
             assert!(svg.contains("<path"), "{shape:?} renders a path");
         }
+    }
+
+    #[test]
+    fn centre_logo_is_embedded_and_masked() {
+        let matrix = QrMatrix::try_new("https://example.com", EccLevel::H, Overlay::Image)
+            .expect("URL should encode");
+        let config = VectorRenderConfig {
+            logo: Some(LogoConfig {
+                data_url: "data:image/png;base64,AAAA".to_string(),
+                shape: LogoMaskShape::Rounded,
+                scale_percent: 22.0,
+            }),
+            ..VectorRenderConfig::default()
+        };
+        let svg = render_svg(&matrix, &config);
+
+        assert!(svg.contains(r#"<clipPath id="logo-clip">"#), "logo mask");
+        assert!(
+            svg.contains(r#"<image href="data:image/png;base64,AAAA""#),
+            "logo data URL is embedded"
+        );
     }
 
     #[test]

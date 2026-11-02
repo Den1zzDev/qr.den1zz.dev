@@ -1,4 +1,4 @@
-const CACHE_NAME = 'qr-den1zz-v4';
+const CACHE_NAME = 'qr-den1zz-v5';
 
 self.addEventListener('install', () => {
   self.skipWaiting();

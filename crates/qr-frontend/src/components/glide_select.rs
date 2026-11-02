@@ -1,7 +1,14 @@
 //! Chip-style dropdown for selecting the active payload tab.
 
+use std::time::Duration;
+
+use leptos::html;
 use leptos::prelude::*;
 use web_sys::KeyboardEvent;
+
+use crate::components::icons::Check;
+use crate::components::icons::ChevronDown;
+use crate::components::icons::PayloadIcon;
 
 /// Payload kinds supported by the editor.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -68,14 +75,14 @@ impl PayloadTab {
 
 /// Vertical offsets for the animated selection pill.
 const PILL_STYLES: [&str; 8] = [
-    "transform: translateY(calc(0 * (var(--gs-row, 28px) + 1px))); opacity: 1;",
-    "transform: translateY(calc(1 * (var(--gs-row, 28px) + 1px))); opacity: 1;",
-    "transform: translateY(calc(2 * (var(--gs-row, 28px) + 1px))); opacity: 1;",
-    "transform: translateY(calc(3 * (var(--gs-row, 28px) + 1px))); opacity: 1;",
-    "transform: translateY(calc(4 * (var(--gs-row, 28px) + 1px))); opacity: 1;",
-    "transform: translateY(calc(5 * (var(--gs-row, 28px) + 1px))); opacity: 1;",
-    "transform: translateY(calc(6 * (var(--gs-row, 28px) + 1px))); opacity: 1;",
-    "transform: translateY(calc(7 * (var(--gs-row, 28px) + 1px))); opacity: 1;",
+    "transform: translateY(calc(0 * (var(--gs-row, 32px) + 1px))); opacity: 1;",
+    "transform: translateY(calc(1 * (var(--gs-row, 32px) + 1px))); opacity: 1;",
+    "transform: translateY(calc(2 * (var(--gs-row, 32px) + 1px))); opacity: 1;",
+    "transform: translateY(calc(3 * (var(--gs-row, 32px) + 1px))); opacity: 1;",
+    "transform: translateY(calc(4 * (var(--gs-row, 32px) + 1px))); opacity: 1;",
+    "transform: translateY(calc(5 * (var(--gs-row, 32px) + 1px))); opacity: 1;",
+    "transform: translateY(calc(6 * (var(--gs-row, 32px) + 1px))); opacity: 1;",
+    "transform: translateY(calc(7 * (var(--gs-row, 32px) + 1px))); opacity: 1;",
 ];
 
 /// Dropdown that selects the active payload tab.
@@ -83,6 +90,8 @@ const PILL_STYLES: [&str; 8] = [
 pub(crate) fn GlideSelect(active_tab: RwSignal<PayloadTab>) -> impl IntoView {
     let (is_open, set_is_open) = signal(false);
     let (hover_index, set_hover_index) = signal(Option::<usize>::None);
+    let (is_swapping, set_is_swapping) = signal(false);
+    let trigger_ref = NodeRef::<html::Button>::new();
 
     let selected_index = move || {
         PayloadTab::ALL
@@ -94,6 +103,20 @@ pub(crate) fn GlideSelect(active_tab: RwSignal<PayloadTab>) -> impl IntoView {
     let pill_style = move || {
         let index = active_pill_index().min(PILL_STYLES.len() - 1);
         PILL_STYLES[index]
+    };
+
+    Effect::new(move |_| {
+        let _ = active_tab.get();
+        set_is_swapping.set(true);
+        set_timeout(
+            move || set_is_swapping.set(false),
+            Duration::from_millis(180),
+        );
+    });
+
+    let close_menu = move || {
+        set_is_open.set(false);
+        set_hover_index.set(None);
     };
 
     let handle_keydown = move |event: KeyboardEvent| {
@@ -110,9 +133,12 @@ pub(crate) fn GlideSelect(active_tab: RwSignal<PayloadTab>) -> impl IntoView {
         match key.as_str() {
             "Escape" => {
                 event.prevent_default();
-                set_is_open.set(false);
-                set_hover_index.set(None);
+                close_menu();
+                if let Some(trigger) = trigger_ref.get() {
+                    let _ = trigger.focus();
+                }
             }
+            "Tab" => close_menu(),
             "ArrowDown" => {
                 event.prevent_default();
                 let current = active_pill_index();
@@ -139,24 +165,25 @@ pub(crate) fn GlideSelect(active_tab: RwSignal<PayloadTab>) -> impl IntoView {
                 event.prevent_default();
                 let index = active_pill_index().min(PayloadTab::ALL.len() - 1);
                 active_tab.set(PayloadTab::ALL[index]);
-                set_is_open.set(false);
-                set_hover_index.set(None);
+                close_menu();
             }
             _ => {}
         }
     };
 
     view! {
-        <div class="glide-select" on:keydown=handle_keydown>
+        <div
+            class="glide-select"
+            on:keydown=handle_keydown
+            data-swap=move || is_swapping.get().then_some("")
+        >
             // Backdrop for click-outside dismissal.
             {move || if is_open.get() {
                 view! {
                     <div
                         class="fixed inset-0 z-40 bg-transparent cursor-default"
-                        on:click=move |_| {
-                            set_is_open.set(false);
-                            set_hover_index.set(None);
-                        }
+                        aria-hidden="true"
+                        on:click=move |_| close_menu()
                     />
                 }.into_any()
             } else {
@@ -165,22 +192,29 @@ pub(crate) fn GlideSelect(active_tab: RwSignal<PayloadTab>) -> impl IntoView {
 
             <button
                 type="button"
+                node_ref=trigger_ref
                 role="combobox"
+                aria-label="Content type"
                 aria-haspopup="listbox"
-                aria-expanded=move || is_open.get()
+                aria-controls="payload-type-list"
+                aria-expanded=move || is_open.get().to_string()
+                aria-activedescendant=move || {
+                    is_open
+                        .get()
+                        .then(|| format!("payload-type-{}", active_pill_index()))
+                }
                 class="glide-select__trigger"
                 on:click=move |_| {
                     set_is_open.update(|open| *open = !*open);
-                    set_hover_index.set(None);
+                    set_hover_index.set(Some(selected_index()));
                 }
             >
-                <span class="glide-select__label">
-                    {move || active_tab.get().label()}
+                <span class="glide-select__trigger-icon" aria-hidden="true">
+                    {move || view! { <PayloadIcon tab=active_tab.get() size=14 /> }}
                 </span>
+                <span class="glide-select__label">{move || active_tab.get().label()}</span>
                 <span class="glide-select__chevron" aria-hidden="true">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
+                    <ChevronDown size=12 />
                 </span>
             </button>
 
@@ -193,7 +227,9 @@ pub(crate) fn GlideSelect(active_tab: RwSignal<PayloadTab>) -> impl IntoView {
                         data-align="right"
                     >
                         <div
+                            id="payload-type-list"
                             role="listbox"
+                            aria-label="Content type"
                             class="glide-select__list"
                             data-live=""
                             on:mouseleave=move |_| set_hover_index.set(None)
@@ -208,32 +244,32 @@ pub(crate) fn GlideSelect(active_tab: RwSignal<PayloadTab>) -> impl IntoView {
                                 let is_selected = move || active_tab.get() == tab;
                                 view! {
                                     <div
+                                        id=format!("payload-type-{index}")
                                         role="option"
-                                        aria-selected=is_selected
+                                        aria-selected=move || is_selected().to_string()
                                         data-index=index
                                         class="glide-select__option"
                                         on:mouseenter=move |_| set_hover_index.set(Some(index))
                                         on:mouseover=move |_| set_hover_index.set(Some(index))
                                         on:click=move |_| {
                                             active_tab.set(tab);
-                                            set_is_open.set(false);
-                                            set_hover_index.set(None);
+                                            close_menu();
                                         }
                                     >
+                                        <span class="glide-select__option-icon" aria-hidden="true">
+                                            <PayloadIcon tab=tab size=14 />
+                                        </span>
                                         <span class="glide-select__name">{tab.label()}</span>
                                         <span
                                             class="glide-select__check"
-                                            data-on=move || is_selected().then_some("")
+                                            aria-hidden="true"
                                             style=move || if is_selected() {
                                                 "visibility: visible;"
                                             } else {
                                                 "visibility: hidden;"
                                             }
-                                            aria-hidden="true"
                                         >
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                                <polyline points="20 6 9 17 4 12"></polyline>
-                                            </svg>
+                                            <Check size=13 />
                                         </span>
                                     </div>
                                 }

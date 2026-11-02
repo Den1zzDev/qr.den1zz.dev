@@ -7,10 +7,8 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::contrast::contrast_ratio;
+use crate::contrast::MIN_GRAPHIC_CONTRAST;
 use crate::matrix::QrMatrix;
-
-/// Minimum WCAG contrast ratio considered acceptable for scanning.
-const MIN_CONTRAST_RATIO: f32 = 3.5;
 
 /// Pixels per module used by [`verify_matrix`].
 const MODULE_PIXELS: usize = 3;
@@ -156,7 +154,7 @@ fn unscannable(contrast: f32) -> VerificationReport {
         status: ScanStatus::Unscannable,
         decoded_content: None,
         contrast_ratio: contrast,
-        is_contrast_acceptable: contrast >= MIN_CONTRAST_RATIO,
+        is_contrast_acceptable: contrast >= MIN_GRAPHIC_CONTRAST,
     }
 }
 
@@ -183,7 +181,7 @@ fn decode_from_fill(
         }
     }
 
-    let is_contrast_acceptable = contrast >= MIN_CONTRAST_RATIO;
+    let is_contrast_acceptable = contrast >= MIN_GRAPHIC_CONTRAST;
     let status = match decoded_content.as_deref() {
         Some(decoded) if decoded == expected_payload && is_contrast_acceptable => {
             ScanStatus::Verified
