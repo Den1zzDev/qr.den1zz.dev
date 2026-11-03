@@ -40,7 +40,7 @@ fn Shell() -> impl IntoView {
                 <title>"qr.den1zz.dev · Local QR code studio"</title>
                 <meta
                     name="description"
-                    content="Design a QR code, tune the modules and colours, and export a print-ready PNG or SVG. Everything runs in your browser."
+                    content="Design a QR code, tune the modules and colours, and export a PNG or SVG at print resolution. Everything runs in your browser."
                 />
                 <meta name="color-scheme" content="dark" />
                 <meta name="theme-color" content="#000000" />

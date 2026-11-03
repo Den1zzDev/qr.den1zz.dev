@@ -2,9 +2,9 @@
 
 /// Minimum contrast ratio a rendered code needs against its background.
 ///
-/// WCAG 2.1 treats 3:1 as the floor for non-text graphics. The scan verifier
-/// and the studio both use this value so a code that passes the preview check
-/// is also accepted by verification.
+/// WCAG 2.1 treats 3:1 as the floor for non-text graphics. The studio's
+/// palette badges and the server-side scan verifier both use this value, so a
+/// code that passes the preview check clears the verifier's graphic floor.
 pub const MIN_GRAPHIC_CONTRAST: f32 = 3.0;
 
 /// Luminance value at or below which the linearisation curve is applied.

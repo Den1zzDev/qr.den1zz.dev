@@ -4,7 +4,6 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use leptos::prelude::*;
-use qr_core::contrast::MIN_GRAPHIC_CONTRAST;
 use qr_core::payload::SanitizedPayload;
 
 use crate::browser;
@@ -78,10 +77,7 @@ pub(crate) fn PreviewPanel(
                 }}
             </p>
 
-            <div class="preview__top">
-                <h2 class="panel__title">"Preview"</h2>
-                <span class="preview__format">"PNG · SVG"</span>
-            </div>
+            <h2 class="sr-only">"Preview"</h2>
 
             {move || match result.get() {
                 PreviewState::Empty => view! {
@@ -134,7 +130,6 @@ pub(crate) fn PreviewPanel(
                     let ratios = contrast.get();
                     let data = sanitized.get();
                     let summary = summarize(&data.content);
-                    let bytes = data.cleaned_bytes;
                     let RenderedCode { matrix, svg } = rendered;
                     let all_acceptable = ratios.is_acceptable();
                     let svg = Rc::new(svg);
@@ -142,10 +137,66 @@ pub(crate) fn PreviewPanel(
                     let svg_for_copy = Rc::clone(&svg);
                     let svg_for_svg_download = Rc::clone(&svg);
                     let svg_for_svg_copy = Rc::clone(&svg);
-                    let has_logo = state.logo_data_url.get().is_some();
 
                     view! {
-                        <figure class="space-y-4">
+                        <figure class="preview__figure">
+                            <div class="status-pill">
+                                <span
+                                    class=if all_acceptable {
+                                        "status-pill__led"
+                                    } else {
+                                        "status-pill__led is-fail"
+                                    }
+                                    aria-hidden="true"
+                                ></span>
+                                <span class="status-pill__state">
+                                    {if all_acceptable {
+                                        "Contrast passes"
+                                    } else {
+                                        "Low contrast"
+                                    }}
+                                </span>
+                                <span class="status-pill__readouts">
+                                    <span class="status-pill__sep" aria-hidden="true">"·"</span>
+                                    <span
+                                        class="status-pill__ratio"
+                                        role="img"
+                                        aria-label=format!("Module contrast {:.1} to 1", ratios.modules)
+                                        title="Module contrast"
+                                    >
+                                        {format!("M:{:.1}:1", ratios.modules)}
+                                    </span>
+                                    <span class="status-pill__sep" aria-hidden="true">"·"</span>
+                                    <span
+                                        class="status-pill__ratio"
+                                        role="img"
+                                        aria-label=format!("Eye frame contrast {:.1} to 1", ratios.eye_frame)
+                                        title="Eye frame contrast"
+                                    >
+                                        {format!("E:{:.1}:1", ratios.eye_frame)}
+                                    </span>
+                                    <span class="status-pill__sep" aria-hidden="true">"·"</span>
+                                    <span
+                                        class="status-pill__ratio"
+                                        role="img"
+                                        aria-label=format!("Eye dot contrast {:.1} to 1", ratios.eye_dot)
+                                        title="Eye dot contrast"
+                                    >
+                                        {format!("D:{:.1}:1", ratios.eye_dot)}
+                                    </span>
+                                </span>
+                                <span class="status-pill__sep" aria-hidden="true">"·"</span>
+                                <span class="status-pill__meta">
+                                    {format!(
+                                        "v{} · {}×{} · ECC {}",
+                                        matrix.version,
+                                        matrix.size,
+                                        matrix.size,
+                                        matrix.ec_level.label(),
+                                    )}
+                                </span>
+                            </div>
+
                             <div
                                 class=move || {
                                     if transparent.get() {
@@ -163,17 +214,28 @@ pub(crate) fn PreviewPanel(
                                 })}
                                 <div class="qr-stage__canvas" inner_html=svg.as_str().to_string()></div>
                             </div>
+                            <p class="sr-only">
+                                "The light margin around the code is the four-module quiet zone required for scanning."
+                            </p>
 
                             <div class="preview__actions">
-                                <p class=if all_acceptable {
+                                <p class=move || if contrast.get().is_acceptable() {
                                     "preview__caveat"
                                 } else {
                                     "preview__caveat preview__caveat--warn"
                                 }>
-                                    {if all_acceptable {
-                                        "Contrast checked. Test-scan before printing."
-                                    } else {
-                                        "Contrast is below 3:1. Adjust the palette before exporting."
+                                    {move || {
+                                        if !contrast.get().is_acceptable() {
+                                            if transparent.get() {
+                                                "Contrast is below 3:1 against white. Adjust the palette before exporting."
+                                            } else {
+                                                "Contrast is below 3:1. Adjust the palette before exporting."
+                                            }
+                                        } else if transparent.get() {
+                                            "Contrast checked against white. Test-scan before printing."
+                                        } else {
+                                            "Contrast checked. Test-scan before printing."
+                                        }
                                     }}
                                 </p>
 
@@ -293,96 +355,26 @@ pub(crate) fn PreviewPanel(
                                 </div>
 
                                 {move || {
-                                    let notification = state.notification.get();
-                                    let notice_class = match &notification {
-                                        Some(notification) if notification.is_error => {
+                                    state.notification.get().map(|notification| {
+                                        let notice_class = if notification.is_error {
                                             "notice is-visible notice--error"
-                                        }
-                                        Some(_) => "notice is-visible notice--success",
-                                        None => "notice",
-                                    };
-                                    view! {
-                                        <p class=notice_class aria-hidden="true">
-                                            {notification.map(|notification| view! {
-                                                {if notification.is_error {
-                                                    view! { <Warning size=12 /> }.into_any()
-                                                } else {
-                                                    view! { <Check size=12 /> }.into_any()
-                                                }}
+                                        } else {
+                                            "notice is-visible notice--success"
+                                        };
+                                        let icon = if notification.is_error {
+                                            view! { <Warning size=12 /> }.into_any()
+                                        } else {
+                                            view! { <Check size=12 /> }.into_any()
+                                        };
+                                        view! {
+                                            <p class=notice_class aria-hidden="true">
+                                                {icon}
                                                 <span>{notification.message}</span>
-                                            })}
-                                        </p>
-                                    }
+                                            </p>
+                                        }
+                                    })
                                 }}
                             </div>
-
-                            <div class="preview__divider"></div>
-
-                            <dl class="spec-grid">
-                                <div class="spec">
-                                    <dt class="spec__label">"Version"</dt>
-                                    <dd class="spec__value">{format!("V{}", matrix.version)}</dd>
-                                </div>
-                                <div class="spec">
-                                    <dt class="spec__label">"Matrix"</dt>
-                                    <dd class="spec__value">
-                                        {format!("{}×{}", matrix.size, matrix.size)}
-                                    </dd>
-                                </div>
-                                <div class="spec">
-                                    <dt class="spec__label">"Error level"</dt>
-                                    <dd class="spec__value">
-                                        {format!(
-                                            "{}{}",
-                                            matrix.ec_level.label(),
-                                            if has_logo { " · logo" } else { "" },
-                                        )}
-                                    </dd>
-                                </div>
-                                <div class="spec">
-                                    <dt class="spec__label">"Payload"</dt>
-                                    <dd class="spec__value">{format!("{bytes} B")}</dd>
-                                </div>
-                            </dl>
-
-                            <div class="ratio-strip" role="group" aria-label="Contrast against the background">
-                                {[
-                                    ("Modules", ratios.modules),
-                                    ("Eyes", ratios.eye_frame),
-                                    ("Dots", ratios.eye_dot),
-                                ].into_iter().map(|(label, ratio)| {
-                                    let passes = ratio >= MIN_GRAPHIC_CONTRAST;
-                                    let description = format!(
-                                        "{label} contrast {ratio:.1} to 1, {}",
-                                        if passes {
-                                            "meets the 3 to 1 minimum"
-                                        } else {
-                                            "below the 3 to 1 minimum"
-                                        },
-                                    );
-                                    view! {
-                                        <span
-                                            class=if passes {
-                                                "ratio-chip ratio-chip--pass"
-                                            } else {
-                                                "ratio-chip ratio-chip--fail"
-                                            }
-                                            title=description.clone()
-                                            aria-label=description
-                                        >
-                                            <span class="ratio-chip__dot" aria-hidden="true"></span>
-                                            <span>{label}</span>
-                                            <span class="tabular">{format!("{ratio:.1}:1")}</span>
-                                        </span>
-                                    }
-                                }).collect_view()}
-                            </div>
-
-                            {move || transparent.get().then(|| view! {
-                                <p class="field-hint">
-                                    "The export is transparent. Ratios assume a white surface."
-                                </p>
-                            })}
                         </figure>
                     }.into_any()
                 }

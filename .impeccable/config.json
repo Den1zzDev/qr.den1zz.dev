@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-color",
+        "value": "#e5e7eb",
+        "createdAt": "2026-11-03T10:29:49.367Z",
+        "reason": "Tailwind Preflight default border colour; never rendered. Every authored border uses a line token."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#9ca3af",
+        "createdAt": "2026-11-03T10:29:49.372Z",
+        "reason": "Tailwind Preflight default placeholder colour; the studio overrides ::placeholder with --text-faint."
+      },
+      {
+        "rule": "design-system-font",
+        "value": "apple color emoji",
+        "createdAt": "2026-11-03T10:29:49.378Z",
+        "reason": "Tailwind Preflight default font stack fallback; no UI text uses it."
+      }
+    ]
+  }
+}

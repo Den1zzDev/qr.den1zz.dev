@@ -22,7 +22,7 @@ fn Shell(css: String, timestamp: u64) -> impl IntoView {
         "@type": "WebApplication",
         "name": "QR Code Studio",
         "url": "https://qr.den1zz.dev/",
-        "description": "Design a QR code, tune the modules and colours, and export a print-ready PNG or SVG. Everything runs in the browser.",
+        "description": "Design a QR code, tune the modules and colours, and export a PNG or SVG at print resolution. Everything runs in the browser.",
         "applicationCategory": "UtilitiesApplication",
         "operatingSystem": "Any",
         "browserRequirements": "Requires WebAssembly and JavaScript",
@@ -40,7 +40,7 @@ fn Shell(css: String, timestamp: u64) -> impl IntoView {
                 <title>"qr.den1zz.dev · Local QR code studio"</title>
                 <meta
                     name="description"
-                    content="Design a QR code, tune the modules and colours, and export a print-ready PNG or SVG. Everything runs in your browser."
+                    content="Design a QR code, tune the modules and colours, and export a PNG or SVG at print resolution. Everything runs in your browser."
                 />
                 <meta name="color-scheme" content="dark" />
                 <meta name="theme-color" content="#000000" />
@@ -51,7 +51,7 @@ fn Shell(css: String, timestamp: u64) -> impl IntoView {
                 <meta property="og:title" content="qr.den1zz.dev · Local QR code studio" />
                 <meta
                     property="og:description"
-                    content="Design a QR code, tune the modules and colours, and export a print-ready PNG or SVG. Everything runs in your browser."
+                    content="Design a QR code, tune the modules and colours, and export a PNG or SVG at print resolution. Everything runs in your browser."
                 />
                 <meta property="og:url" content="https://qr.den1zz.dev/" />
                 <meta property="og:image" content="https://qr.den1zz.dev/og.png" />
@@ -62,7 +62,7 @@ fn Shell(css: String, timestamp: u64) -> impl IntoView {
                 <meta name="twitter:title" content="qr.den1zz.dev · Local QR code studio" />
                 <meta
                     name="twitter:description"
-                    content="Design a QR code, tune the modules and colours, and export a print-ready PNG or SVG. Everything runs in your browser."
+                    content="Design a QR code, tune the modules and colours, and export a PNG or SVG at print resolution. Everything runs in your browser."
                 />
                 <meta name="twitter:image" content="https://qr.den1zz.dev/og.png" />
 

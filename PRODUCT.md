@@ -39,7 +39,7 @@ The entire generator, styler, and contrast checker is Rust compiled to WebAssemb
 ## Brand Commitments
 
 - Name and domain: qr.den1zz.dev, presented as `qr.` in the accent colour and `den1zz.dev` in white.
-- The visual world is an AMOLED-black instrument panel with a single cyan accent and a monospace voice. This is a deliberate identity, not a default theme.
+- The visual world is a glass-panel workbench built as an opaque AMOLED tray stack. One centred column of near-black trays with rounded corners and hairline edges carries a large centred `qr.` wordmark and one cyan signal used for selection and the primary export. Buttons are pills, controls are rounded, and the code sits in a black matted viewfinder inside the preview tray.
 - The product speaks plainly about what it checks. It does not claim a scan will succeed just because contrast passes.
 - The MIT licence and the public repository stay visible.
 
