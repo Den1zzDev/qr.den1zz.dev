@@ -451,7 +451,7 @@ pub(crate) fn PayloadEditor(
                                         max="90"
                                         class="field"
                                         inputmode="decimal"
-                                        aria-describedby="geo-error"
+                                        aria-describedby=move || (geo_incomplete.get() || geo_invalid.get()).then_some("geo-error")
                                         aria-invalid=move || {
                                             (geo_invalid.get() || geo_incomplete.get()).to_string()
                                         }
@@ -470,7 +470,7 @@ pub(crate) fn PayloadEditor(
                                         max="180"
                                         class="field"
                                         inputmode="decimal"
-                                        aria-describedby="geo-error"
+                                        aria-describedby=move || (geo_incomplete.get() || geo_invalid.get()).then_some("geo-error")
                                         aria-invalid=move || {
                                             (geo_invalid.get() || geo_incomplete.get()).to_string()
                                         }
@@ -480,23 +480,27 @@ pub(crate) fn PayloadEditor(
                                     />
                                 </div>
                             </div>
-                            {move || {
-                                if geo_incomplete.get() {
-                                    view! {
-                                        <p id="geo-error" class="field-hint field-hint--error" role="alert">
-                                            "Enter both coordinates to encode a location."
-                                        </p>
-                                    }.into_any()
-                                } else if geo_invalid.get() {
-                                    view! {
-                                        <p id="geo-error" class="field-hint field-hint--error" role="alert">
-                                            "Latitude must be between -90 and 90, and longitude between -180 and 180."
-                                        </p>
-                                    }.into_any()
-                                } else {
-                                    view! { <span /> }.into_any()
+                            <p
+                                id="geo-error"
+                                class=move || {
+                                    if geo_incomplete.get() || geo_invalid.get() {
+                                        "field-hint field-hint--error"
+                                    } else {
+                                        "sr-only"
+                                    }
                                 }
-                            }}
+                                role="alert"
+                            >
+                                {move || {
+                                    if geo_incomplete.get() {
+                                        "Enter both coordinates to encode a location."
+                                    } else if geo_invalid.get() {
+                                        "Latitude must be between -90 and 90, and longitude between -180 and 180."
+                                    } else {
+                                        ""
+                                    }
+                                }}
+                            </p>
                             <div>
                                 <label class="field-label" for="geo-label">"Place label (optional)"</label>
                                 <input
@@ -560,21 +564,31 @@ pub(crate) fn PayloadEditor(
                                         type="text"
                                         class="field"
                                         inputmode="decimal"
-                                        aria-describedby="crypto-amount-error"
+                                        aria-describedby=move || {
+                                            crypto_amount_invalid.get().then_some("crypto-amount-error")
+                                        }
                                         aria-invalid=move || crypto_amount_invalid.get().to_string()
                                         placeholder="0.015"
                                         prop:value=move || state.crypto_amount.get()
                                         on:input=move |event| state.crypto_amount.set(event_target_value(&event))
                                     />
-                                    {move || if crypto_amount_invalid.get() {
-                                        view! {
-                                            <p id="crypto-amount-error" class="field-hint field-hint--error" role="alert">
-                                                "Use a positive decimal such as 0.015."
-                                            </p>
-                                        }.into_any()
-                                    } else {
-                                        view! { <span /> }.into_any()
-                                    }}
+                                    <p
+                                        id="crypto-amount-error"
+                                        class=move || {
+                                            if crypto_amount_invalid.get() {
+                                                "field-hint field-hint--error"
+                                            } else {
+                                                "sr-only"
+                                            }
+                                        }
+                                        role="alert"
+                                    >
+                                        {move || if crypto_amount_invalid.get() {
+                                            "Use a positive decimal such as 0.015."
+                                        } else {
+                                            ""
+                                        }}
+                                    </p>
                                 </div>
                                 <div>
                                     <label class="field-label" for="crypto-note">"Note (optional)"</label>
@@ -642,9 +656,25 @@ pub(crate) fn PayloadEditor(
                         }
                     };
 
+                    // A resolved value that matches what the user typed adds
+                    // nothing. Keep the row for summaries that hide a payload
+                    // (Wi-Fi, vCard, email, crypto) and for transformations
+                    // such as an added scheme or removed tracking parameters.
+                    let show_preview = if !has_content {
+                        true
+                    } else {
+                        match state.active_tab.get() {
+                            PayloadTab::Url => data.content != state.url_input.get().trim(),
+                            PayloadTab::Text => false,
+                            _ => true,
+                        }
+                    };
+
                     view! {
                         <div class="payload-meta">
-                            <span class="payload-meta__content">{preview}</span>
+                            {show_preview.then(|| view! {
+                                <span class="payload-meta__content">{preview}</span>
+                            })}
                             <span class="payload-meta__bytes">
                                 {format!("{} B", data.cleaned_bytes)}
                             </span>

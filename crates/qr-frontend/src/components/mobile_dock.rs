@@ -1,4 +1,4 @@
-//! Compact download bar shown below the two-column breakpoint.
+//! Compact download bar shown below 1024 pixels.
 
 use std::mem;
 
@@ -10,7 +10,6 @@ use wasm_bindgen::JsCast;
 use crate::browser;
 use crate::components::icons::Download;
 use crate::components::icons::Warning;
-use crate::studio_state::ContrastRatios;
 use crate::studio_state::PreviewState;
 use crate::studio_state::StudioState;
 
@@ -22,7 +21,6 @@ use crate::studio_state::StudioState;
 pub(crate) fn MobileDock(
     state: StudioState,
     result: Memo<PreviewState>,
-    contrast: Memo<ContrastRatios>,
     sanitized: Memo<SanitizedPayload>,
 ) -> impl IntoView {
     // Hide the bar while the preview tray is on screen so it never covers the
@@ -37,7 +35,7 @@ pub(crate) fn MobileDock(
         let Some(document) = window.document() else {
             return;
         };
-        let Ok(Some(target)) = document.query_selector(".studio-grid__preview") else {
+        let Ok(Some(target)) = document.query_selector(".preview") else {
             return;
         };
 
@@ -75,30 +73,15 @@ pub(crate) fn MobileDock(
         >
             {move || match result.get() {
                 PreviewState::Ready(rendered) => {
-                    let ratios = contrast.get();
-                    let passes = ratios.is_acceptable();
                     let bytes = sanitized.get().cleaned_bytes;
                     let svg = rendered.svg.clone();
                     let thumb_svg = rendered.svg;
                     let title = format!(
-                        "V{} · {}×{}",
+                        "v{} · {}×{}",
                         rendered.matrix.version,
                         rendered.matrix.size,
                         rendered.matrix.size,
                     );
-                    let (sub_text, sub_class) = match state.notification.get() {
-                        Some(notification) if notification.is_error => {
-                            (notification.message, "dock-sub dock-warn")
-                        }
-                        Some(notification) => (notification.message, "dock-sub dock-ok"),
-                        None => (
-                            format!(
-                                "{bytes} B · {}",
-                                if passes { "Contrast OK" } else { "Low contrast" },
-                            ),
-                            "dock-sub",
-                        ),
-                    };
 
                     view! {
                         // The thumbnail is only mounted while the bar is
@@ -110,7 +93,26 @@ pub(crate) fn MobileDock(
                         })}
                         <div class="dock-info">
                             <p class="dock-title">{title}</p>
-                            <p class=sub_class>{sub_text}</p>
+                            <p
+                                class=move || match state.notification.get() {
+                                    Some(notification) if notification.is_error => {
+                                        "dock-sub dock-warn"
+                                    }
+                                    Some(_) => "dock-sub dock-ok",
+                                    None => "dock-sub",
+                                }
+                            >
+                                {move || match state.notification.get() {
+                                    Some(notification) => notification.message,
+                                    None => {
+                                        format!(
+                                            "{} B · {} px",
+                                            bytes,
+                                            state.target_resolution.get(),
+                                        )
+                                    }
+                                }}
+                            </p>
                         </div>
                         <button
                             type="button"

@@ -194,7 +194,6 @@ pub(crate) fn GlideSelect(active_tab: RwSignal<PayloadTab>) -> impl IntoView {
                 type="button"
                 node_ref=trigger_ref
                 role="combobox"
-                aria-label="Content type"
                 aria-haspopup="listbox"
                 aria-controls="payload-type-list"
                 aria-expanded=move || is_open.get().to_string()
@@ -209,6 +208,7 @@ pub(crate) fn GlideSelect(active_tab: RwSignal<PayloadTab>) -> impl IntoView {
                     set_hover_index.set(Some(selected_index()));
                 }
             >
+                <span class="sr-only">"Content type: "</span>
                 <span class="glide-select__trigger-icon" aria-hidden="true">
                     {move || view! { <PayloadIcon tab=active_tab.get() size=14 /> }}
                 </span>

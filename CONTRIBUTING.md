@@ -108,7 +108,11 @@ Conventions worth knowing:
 
 The visual system is documented in [DESIGN.md](DESIGN.md), with the product record in [PRODUCT.md](PRODUCT.md). Read both before changing the interface.
 
-The short version: AMOLED black, one cyan signal colour, a single monospace family, flat surfaces with hairline borders, and amber for a failed measurement. Cyan is reserved for the wordmark, the primary export, and keyboard focus; selection is white text on a raised surface. Every styled control must show its cost, whether that is a contrast ratio, a byte count, or an error message. The preview stays next to the controls on desktop and a fixed quick-action bar takes over once it scrolls away on smaller screens.
+The short version: AMOLED black, one cyan signal colour, a single monospace family, opaque trays with hairline borders, and amber for a failed measurement.
+
+One centred column, 45rem at its widest, stacks the payload, preview, shapes, palette, and logo trays in that order. There is no desktop two-column split. Cyan marks the wordmark, the selected option, the selected export size, the primary export, links, and keyboard focus; a selected control is a cyan fill with black text. Below 1024 pixels, a fixed quick-action bar takes over once the preview scrolls out of view.
+
+Controls are pill buttons, 10-pixel fields, 32-pixel segments and swatches, and 16-pixel trays. The code sits in a black matted viewfinder with a four-module quiet zone. Every styled control must show its cost, whether that is a contrast ratio, a byte count, or an error message.
 
 When you add a control:
 

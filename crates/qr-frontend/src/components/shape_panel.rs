@@ -18,7 +18,7 @@ pub(crate) fn ShapePanel(state: StudioState) -> impl IntoView {
     view! {
         <div class="panel">
             <div class="panel__head">
-                <h2 class="panel__title">"Modules & eyes"</h2>
+                <h2 class="panel__title">"Shapes & Style"</h2>
                 <button
                     type="button"
                     class="link-button"
@@ -29,9 +29,9 @@ pub(crate) fn ShapePanel(state: StudioState) -> impl IntoView {
                 </button>
             </div>
             <div class="panel__body">
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div class="option-grid">
                     <fieldset class="option-group">
-                        <legend>"Module shape"</legend>
+                        <legend>"Module Shape"</legend>
                         <div class="option-list">
                             {[
                                 (ModuleShape::Classy, "Classy"),
@@ -62,12 +62,12 @@ pub(crate) fn ShapePanel(state: StudioState) -> impl IntoView {
                     </fieldset>
 
                     <fieldset class="option-group">
-                        <legend>"Eye frame"</legend>
+                        <legend>"Eye Frame Shape"</legend>
                         <div class="option-list">
                             {[
-                                (EyeFrameShape::Rounded, "Rounded"),
-                                (EyeFrameShape::Circle, "Circle"),
-                                (EyeFrameShape::Square, "Square"),
+                                (EyeFrameShape::Rounded, "Round Frame"),
+                                (EyeFrameShape::Circle, "Circle Frame"),
+                                (EyeFrameShape::Square, "Square Frame"),
                             ].into_iter().map(|(shape, label)| {
                                 let is_selected = move || state.eye_frame_shape.get() == shape;
                                 view! {
@@ -92,12 +92,12 @@ pub(crate) fn ShapePanel(state: StudioState) -> impl IntoView {
                     </fieldset>
 
                     <fieldset class="option-group">
-                        <legend>"Eye dot"</legend>
+                        <legend>"Eye Dot Shape"</legend>
                         <div class="option-list">
                             {[
-                                (EyeDotShape::Circle, "Circle"),
-                                (EyeDotShape::Rounded, "Rounded"),
-                                (EyeDotShape::Square, "Square"),
+                                (EyeDotShape::Circle, "Circle Dot"),
+                                (EyeDotShape::Rounded, "Round Dot"),
+                                (EyeDotShape::Square, "Square Dot"),
                             ].into_iter().map(|(shape, label)| {
                                 let is_selected = move || state.eye_dot_shape.get() == shape;
                                 view! {

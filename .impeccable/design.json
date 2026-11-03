@@ -19,8 +19,8 @@
       "surface-raised": {
         "role": "neutral",
         "displayName": "Raised Black",
-        "canonical": "#101010",
-        "tonalRamp": ["#080808", "#0d0d0d", "#101010", "#171717", "#222222", "#383838", "#5c5c5c", "#a0a0a0"]
+        "canonical": "#141414",
+        "tonalRamp": ["#080808", "#0d0d0d", "#141414", "#1b1b1b", "#262626", "#3a3a3a", "#5e5e5e", "#a0a0a0"]
       },
       "surface-sunken": {
         "role": "neutral",
@@ -167,7 +167,7 @@
       "name": "Panel",
       "kind": "card",
       "refersTo": "panel",
-      "description": "The only container on the page. Flat black tray with a hairline border.",
+      "description": "The only container on the page. Opaque black tray with a 16px radius, a hairline border, and a one-pixel top bevel.",
       "html": "<section class=\"ds-panel\"><h2 class=\"ds-panel-title\">Palette</h2><p class=\"ds-panel-copy\">Colour controls sit on a flat tray.</p></section>",
       "css": ".ds-panel { min-width: 0; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; background: #0a0a0a; padding: 20px; color: #fff; font-family: \"Maple Mono\", ui-monospace, monospace; } .ds-panel-title { margin: 0 0 12px; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #8a8a8a; } .ds-panel-copy { margin: 0; font-size: 15px; line-height: 1.6; color: #adadad; }"
     },
@@ -199,46 +199,47 @@
       "name": "Selected Option",
       "kind": "custom",
       "refersTo": "option-selected",
-      "description": "Radio row with a miniature shape glyph. Selection is a cyan wash, never a solid fill.",
-      "html": "<label class=\"ds-option\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><g fill=\"#00f0ff\"><circle cx=\"6.5\" cy=\"6.5\" r=\"4.2\"/><circle cx=\"17.5\" cy=\"6.5\" r=\"4.2\"/><circle cx=\"6.5\" cy=\"17.5\" r=\"4.2\"/><circle cx=\"17.5\" cy=\"17.5\" r=\"4.2\"/></g></svg><span class=\"ds-option-label\">Dots</span><span class=\"ds-option-check\">✓</span></label>",
-      "css": ".ds-option { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border: 1px solid rgba(0,240,255,0.35); border-radius: 10px; background: rgba(0,240,255,0.08); color: #fff; font: 500 12.5px/1.3 \"Maple Mono\", ui-monospace, monospace; cursor: pointer; } .ds-option svg { flex: 0 0 auto; color: #00f0ff; } .ds-option-label { flex: 1 1 auto; } .ds-option-check { color: #00f0ff; font-size: 13px; }"
+      "description": "Radio row with a miniature shape glyph. Selection is a solid cyan fill with black text and a black check.",
+      "html": "<label class=\"ds-option\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><g fill=\"#000000\"><circle cx=\"6.5\" cy=\"6.5\" r=\"4.2\"/><circle cx=\"17.5\" cy=\"6.5\" r=\"4.2\"/><circle cx=\"6.5\" cy=\"17.5\" r=\"4.2\"/><circle cx=\"17.5\" cy=\"17.5\" r=\"4.2\"/></g></svg><span class=\"ds-option-label\">Dots</span><span class=\"ds-option-check\">✓</span></label>",
+      "css": ".ds-option { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 0 10px; border: 1px solid #00f0ff; border-radius: 10px; background: #00f0ff; color: #000; font: 500 13px/1.3 \"Maple Mono\", ui-monospace, monospace; cursor: pointer; } .ds-option svg { flex: 0 0 auto; color: #000; } .ds-option-label { flex: 1 1 auto; } .ds-option-check { color: #000; font-size: 13px; }"
     },
     {
       "name": "Colour Swatch",
       "kind": "custom",
-      "description": "Preset colour control with a 3.5px cyan selection ring and a difference-blended check.",
+      "description": "Preset colour control with a 3.5px white selection ring and a difference-blended check.",
       "html": "<button class=\"ds-swatch\" style=\"background:#008b99\" aria-label=\"Set eye dot to #008b99\"><span class=\"ds-swatch-check\">✓</span></button>",
-      "css": ".ds-swatch { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border: 1px solid rgba(255,255,255,0.3); border-radius: 999px; box-shadow: 0 0 0 2px #0a0a0a, 0 0 0 3.5px #00f0ff; cursor: pointer; } .ds-swatch-check { color: #fff; mix-blend-mode: difference; font-size: 12px; }"
+      "css": ".ds-swatch { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid rgba(255,255,255,0.3); border-radius: 999px; box-shadow: 0 0 0 2px #0a0a0a, 0 0 0 3.5px #ffffff; cursor: pointer; } .ds-swatch-check { color: #fff; mix-blend-mode: difference; font-size: 12px; }"
     },
     {
       "name": "Status Pill",
       "kind": "custom",
-      "description": "Measured state. Green when the contrast check passes, amber when a region is below 3:1.",
-      "html": "<span class=\"ds-status\"><span class=\"ds-status-dot\"></span><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><polyline points=\"20 6 9 17 4 12\"/></svg>Contrast passes</span>",
-      "css": ".ds-status { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 10px; border: 1px solid rgba(52,211,153,0.3); border-radius: 999px; background: rgba(52,211,153,0.06); color: #34d399; font: 500 12px/1 \"Maple Mono\", ui-monospace, monospace; } .ds-status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }"
+      "description": "Measured state. A static green LED and white state when contrast passes, amber when a region is below 3:1.",
+      "html": "<span class=\"ds-status\"><span class=\"ds-status-dot\"></span><span class=\"ds-status-label\">Contrast passes</span><span class=\"ds-status-ratio\">M:21.0:1</span></span>",
+      "css": ".ds-status { display: inline-flex; align-items: center; gap: 8px; min-height: 31px; padding: 0 14px; border: 1px solid rgba(255,255,255,0.3); border-radius: 999px; background: #050505; color: #adadad; font: 400 11px/1.5 \"Maple Mono\", ui-monospace, monospace; } .ds-status-dot { width: 6px; height: 6px; border-radius: 50%; background: #34d399; } .ds-status-label { color: #fff; font-weight: 600; } .ds-status-ratio { font-variant-numeric: tabular-nums; }"
     },
     {
       "name": "Preview Stage",
       "kind": "card",
-      "description": "Square inspection tray for the code. 4-module quiet zone inside, checkerboard when transparent. Updates 120ms after the last keystroke.",
+      "description": "Square viewfinder for the code. 16px stage, 20px black mat, inset hairline and vignette, four-module quiet zone inside.",
       "html": "<div class=\"ds-stage\"><div class=\"ds-stage-qr\"><span>QR</span></div></div>",
-      "css": ".ds-stage { display: grid; place-items: center; width: 100%; aspect-ratio: 1 / 1; padding: 18px; border: 1px solid rgba(255,255,255,0.3); border-radius: 14px; background: #050505; } .ds-stage-qr { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 4px; background: #fff; color: #000; font: 700 48px/1 \"Maple Mono\", ui-monospace, monospace; }"
+      "css": ".ds-stage { display: grid; place-items: center; width: 100%; max-width: 400px; margin-inline: auto; aspect-ratio: 1 / 1; padding: 20px; border-radius: 16px; background: #000; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12), inset 0 0 24px rgba(0,0,0,0.9); } .ds-stage-qr { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 4px; background: #fff; color: #000; font: 700 48px/1 \"Maple Mono\", ui-monospace, monospace; }"
     }
   ],
   "narrative": {
-    "northStar": "The Darkroom Instrument",
-    "overview": "The studio is a precision instrument in a dark room. The page is a black field, the controls are milled trays, and cyan appears only where the tool is measuring, selecting, or acting. Nothing glows for atmosphere. The monospace face is not a costume for technical: it is the native voice of a tool that reports versions, byte counts, and contrast ratios.\n\nThe layout reads as a workbench. The payload and its styling controls form the left bench; the generated code and export actions form the right inspection tray. On a phone the preview follows the payload so the result is never more than one short scroll away. This is an Operate surface, so familiar affordances stay familiar: native radio semantics, native colour pickers, native file input, standard download buttons.",
+    "northStar": "The Glass-Panel Workbench",
+    "overview": "The studio is one instrument on a dark bench. The page is a single centred column of black trays, each with a 16-pixel radius and a hairline edge, stacked in the order the work happens: choose the payload, watch the code, then tune its shape, colour, and logo. Cyan is the signal: the wordmark, the active choice, the primary export, links, and focus. A white code sits on a black matted viewfinder inside its tray, with a measured status pill above it.\n\nThis is the cadd240 visual world, restored. The centred stack, full-cyan selection bars, pill exports, large centred wordmark, and matted code are the signature. Later work added debounced rendering, a mobile quick-action bar, WCAG contrast tokens, and stronger type. This is an Operate surface, so familiar affordances stay familiar: native radio semantics, native colour pickers, native file input, standard download buttons.",
     "keyCharacteristics": [
-      "AMOLED black canvas with no drop shadows and no glass blur.",
-      "One cyan signal colour, used for primary action, selection, and live state.",
-      "A single monospace family with a fixed, compact role scale.",
-      "Hairline borders for panels; 3:1 control borders for inputs and buttons.",
+      "AMOLED black page with opaque near-black trays, a hairline edge, and a one-pixel top bevel. No blur or glow.",
+      "One centred 45rem column; the payload, preview, shapes, palette, and logo trays stack with 20 to 24-pixel gaps.",
+      "One cyan signal used for the wordmark, selection, the primary export, links, and focus.",
+      "Pill buttons, 10-pixel controls, 16-pixel trays, circular swatches.",
+      "A black matted viewfinder with a four-module quiet zone inside the code.",
       "Every styling decision reports a measurable consequence."
     ],
     "rules": [
       {
         "name": "The One Signal Rule",
-        "body": "Cyan marks a control that is selected, focused, or primary. It never becomes body copy, a decorative border, or a background wash larger than a chip.",
+        "body": "Cyan marks the wordmark, the active choice, the primary export, links, and focus. Selection is a solid cyan fill with black text. Cyan never becomes body copy, a decorative border, or a background wash.",
         "section": "colors"
       },
       {
@@ -247,35 +248,43 @@
         "section": "colors"
       },
       {
+        "name": "The Opaque Glass Rule",
+        "body": "The trays carry the cadd240 glass-panel silhouette, but the material is opaque. No backdrop blur, translucent white overlay, gradient sheen, or coloured glow. Depth is the step from #000000 to #0a0a0a plus one hairline.",
+        "section": "elevation"
+      },
+      {
         "name": "The Readout Rule",
-        "body": "Any number that can change while the user works is set in tabular figures: contrast ratios, byte counts, matrix size, and version.",
+        "body": "Any number that can change while the user works is set in tabular figures: contrast ratios, byte counts, matrix size, version, and error level.",
         "section": "typography"
       },
       {
         "name": "The No-Costume Rule",
-        "body": "Monospace is used because the interface is full of measured values, not to signal that the product was made by developers. Prose still gets a 60ch measure and 1.6 leading.",
+        "body": "Monospace is used because the interface is full of measured values, not to signal that the product was made by developers. Prose still gets a 66ch measure and 1.6 leading.",
         "section": "typography"
       },
       {
         "name": "The Flat-By-Default Rule",
-        "body": "Surfaces are flat at rest. A shadow appears only if it explains a physical layer, and on this palette that means it does not appear at all.",
+        "body": "Surfaces are flat. A shadow appears only when it explains a physical layer; here that means an inset hairline or vignette, never a cast shadow.",
         "section": "elevation"
       }
     ],
     "dos": [
-      "Do keep cyan for selection, focus, links, and the primary action. A screen should read as black, grey, and white until the user acts.",
-      "Do show the measured contrast ratio next to each colour control, not only in the preview.",
+      "Do keep the centred single-column stack; it is the cadd240 composition.",
+      "Do use cyan for selection, the wordmark, links, focus, and the one primary export.",
+      "Do show the measured contrast ratio next to each colour control and in the status pill.",
       "Do keep the four-module quiet zone in the preview and every export. It is part of the rendered code, not padding around it.",
       "Do use 30% white for control borders so inputs and buttons clear the 3:1 non-text contrast floor.",
       "Do use tabular numerals for any value that updates while the user types.",
-      "Do keep the sensitive-payload summary free of Wi-Fi passwords and email bodies."
+      "Do keep the sensitive-payload summary free of Wi-Fi passwords and email bodies.",
+      "Do collapse grids by intrinsic size so 200% text never truncates a label."
     ],
     "donts": [
-      "Don't add glass, backdrop blur, gradients, or glow to panels; depth is tonal here.",
+      "Don't add blur, translucent white washes, gradients, cast shadows, or coloured glow; the glass-panel silhouette is opaque here.",
+      "Don't split the workbench into two desktop columns; the single centred stack is the identity.",
       "Don't fill inactive options or secondary buttons with cyan; it erases the primary-action hierarchy.",
+      "Don't use a rounded chip for a control that reads better as a field, a row, or a circle.",
       "Don't use Unicode glyphs or emoji as icons; the icon set is drawn at a 1.6px stroke on a 24-unit grid.",
-      "Don't claim a code is scan-verified when only contrast was checked; say \"Contrast passes\" and ask the user to test-scan before printing.",
-      "Don't make the preview sticky on short viewports; the export controls would be unreachable."
+      "Don't claim a code is scan-verified when only contrast was checked; say \"Contrast passes\" and ask the user to test-scan before printing."
     ]
   }
 }

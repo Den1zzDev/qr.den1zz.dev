@@ -125,7 +125,7 @@ pub(crate) fn LogoPanel(state: StudioState) -> impl IntoView {
     view! {
         <div class="panel">
             <div class="panel__head">
-                <h2 class="panel__title">"Centre logo"</h2>
+                <h2 class="panel__title">"Center Logo (Optional)"</h2>
                 {move || if state.logo_data_url.get().is_some() {
                     view! {
                         <button
@@ -182,7 +182,7 @@ pub(crate) fn LogoPanel(state: StudioState) -> impl IntoView {
                         type="file"
                         class="sr-only"
                         accept="image/png,image/jpeg,image/svg+xml"
-                        aria-label="Centre logo file"
+                        aria-label="Upload a logo file"
                         on:change=move |event| handle_input(state, error, event)
                     />
                 </label>

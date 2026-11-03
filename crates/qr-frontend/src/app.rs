@@ -4,8 +4,6 @@ use std::time::Duration;
 
 use leptos::prelude::*;
 
-use crate::components::icons::External;
-use crate::components::icons::Github;
 use crate::components::logo_panel::LogoPanel;
 use crate::components::mobile_dock::MobileDock;
 use crate::components::palette_panel::PalettePanel;
@@ -84,80 +82,36 @@ pub fn App() -> impl IntoView {
         <a class="skip-link" href="#studio">"Skip to the studio"</a>
 
         <header class="site-header">
-            <div class="site-header__inner">
-                <div>
-                    <a class="wordmark" href="/">
-                        <span class="wordmark__accent">"qr."</span>
-                        <span>"den1zz.dev"</span>
-                    </a>
-                    <p class="site-tagline">"Local QR studio. Nothing leaves your browser."</p>
-                </div>
-                <div class="header-actions">
-                    <span
-                        class="header-readout"
-                        title="Generation and contrast checks run in this tab. No payload data is uploaded."
-                    >
-                        <span class="header-readout__led" aria-hidden="true"></span>
-                        "Local · WASM · no upload"
-                    </span>
-                    <a
-                        class="icon-button"
-                        href=REPOSITORY_URL
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label="Open the GitHub repository in a new tab"
-                    >
-                        <Github size=18 />
-                    </a>
-                </div>
-            </div>
+            <h1 class="wordmark">
+                <a class="wordmark__link" href="/">
+                    <span class="wordmark__accent">"qr."</span>
+                    <span>"den1zz.dev"</span>
+                </a>
+            </h1>
+            <p class="site-tagline">
+                "Local, client-side QR studio built in pure Rust & WebAssembly."
+            </p>
         </header>
 
         <main id="studio" class="studio-shell">
-            <div class="studio-intro">
-                <h1 class="studio-intro__title">"Design a QR code for print and screen."</h1>
-                <p class="studio-intro__copy">
-                    "Pick a payload, tune the modules and colours, then export a PNG or SVG at print resolution. Everything runs in this tab."
-                </p>
-            </div>
-
-            <div class="studio-grid">
-                <div class="studio-grid__payload">
-                    <PayloadEditor state=state query_info=query_info sanitized=sanitized />
-                </div>
-
-                <div class="studio-grid__preview">
-                    <PreviewPanel state=state result=preview contrast=contrast sanitized=sanitized />
-                </div>
-
-                <div class="studio-grid__style">
-                    <ShapePanel state=state />
-                    <PalettePanel state=state contrast=contrast />
-                    <LogoPanel state=state />
-                </div>
+            <div class="workbench">
+                <PayloadEditor state=state query_info=query_info sanitized=sanitized />
+                <PreviewPanel state=state result=preview contrast=contrast sanitized=sanitized />
+                <ShapePanel state=state />
+                <PalettePanel state=state contrast=contrast />
+                <LogoPanel state=state />
             </div>
         </main>
 
         <footer class="site-footer">
-            <div class="site-footer__inner">
-                <span>"MIT licensed. Built with Rust and WebAssembly."</span>
-                <a
-                    href=REPOSITORY_URL
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="inline-flex items-center gap-1"
-                >
-                    "Source"
-                    <External size=12 />
+            <p>"Open source software released under the MIT License."</p>
+            <p>
+                <a href=REPOSITORY_URL target="_blank" rel="noopener noreferrer">
+                    "GitHub repository"
                 </a>
-            </div>
+            </p>
         </footer>
 
-        <MobileDock
-            state=state
-            result=preview
-            contrast=contrast
-            sanitized=sanitized
-        />
+        <MobileDock state=state result=preview sanitized=sanitized />
     }
 }

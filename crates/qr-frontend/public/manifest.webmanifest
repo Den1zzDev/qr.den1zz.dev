@@ -2,7 +2,7 @@
   "id": "/",
   "name": "qr.den1zz.dev · QR Code Studio",
   "short_name": "QR Studio",
-  "description": "Design a QR code, tune the modules and colours, and export a print-ready PNG or SVG. Everything runs in the browser.",
+  "description": "Design a QR code, tune the modules and colours, and export a PNG or SVG at print resolution. Everything runs in the browser.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

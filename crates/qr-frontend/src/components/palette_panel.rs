@@ -5,7 +5,6 @@ use qr_core::contrast::MIN_GRAPHIC_CONTRAST;
 
 use crate::browser;
 use crate::components::icons::Check;
-use crate::components::icons::Copy;
 use crate::components::icons::Pipette;
 use crate::components::icons::Warning;
 use crate::studio_state::ContrastRatios;
@@ -17,7 +16,7 @@ const CODE_PRESETS: [&str; 4] = ["#000000", "#008b99", "#00f0ff", "#ffffff"];
 /// Colours offered for the finder dot.
 const DOT_PRESETS: [&str; 4] = ["#008b99", "#00f0ff", "#000000", "#ffffff"];
 
-/// Colours offered for the background.
+/// Colours offered for the background: paper white, off-white, and black.
 const BACKGROUND_PRESETS: [&str; 3] = ["#ffffff", "#f2f2f2", "#000000"];
 
 /// Renders a contrast badge for `value`.
@@ -32,6 +31,7 @@ fn ratio_badge(value: f32, label: &'static str) -> AnyView {
     view! {
         <span
             class=if passes { "ratio ratio--pass" } else { "ratio ratio--fail" }
+            role="img"
             aria-label=description.clone()
             title=description
         >
@@ -69,7 +69,7 @@ fn CustomColor(
             <input
                 type="color"
                 class="color-custom__input"
-                aria-label=format!("{label} custom colour")
+                aria-label=format!("{label} picker")
                 disabled=move || disabled.get()
                 prop:value=move || value.get()
                 on:input=move |event| value.set(event_target_value(&event))
@@ -100,11 +100,7 @@ fn Swatches(
                         title=preset
                         disabled=move || disabled.get()
                         on:click=move |_| value.set(preset.to_string())
-                    >
-                        <span class="swatch__check" aria-hidden="true">
-                            <Check size=12 />
-                        </span>
-                    </button>
+                    ></button>
                 }
             }).collect_view()}
         </div>
@@ -152,7 +148,7 @@ pub(crate) fn PalettePanel(state: StudioState, contrast: Memo<ContrastRatios>) -
     view! {
         <div class="panel">
             <div class="panel__head">
-                <h2 class="panel__title">"Palette"</h2>
+                <h2 class="panel__title">"Colors & Palette"</h2>
                 <button
                     type="button"
                     class="link-button"
@@ -197,15 +193,15 @@ pub(crate) fn PalettePanel(state: StudioState, contrast: Memo<ContrastRatios>) -
                                 {move || ratio_badge(contrast.get().eye_frame, "Eye frame")}
                                 <button
                                     type="button"
-                                    class="icon-link"
+                                    class="match-link"
                                     title="Use the module colour"
-                                    aria-label="Use the module colour"
+                                    aria-label="Use the module colour for the eye frame"
                                     disabled=move || {
                                         state.eye_color.get() == state.module_color.get()
                                     }
                                     on:click=move |_| state.eye_color.set(state.module_color.get())
                                 >
-                                    <Copy size=11 />
+                                    "Match Code"
                                 </button>
                                 <HexValue
                                     state=state
@@ -235,15 +231,15 @@ pub(crate) fn PalettePanel(state: StudioState, contrast: Memo<ContrastRatios>) -
                                 {move || ratio_badge(contrast.get().eye_dot, "Eye dot")}
                                 <button
                                     type="button"
-                                    class="icon-link"
+                                    class="match-link"
                                     title="Use the eye frame colour"
-                                    aria-label="Use the eye frame colour"
+                                    aria-label="Use the eye frame colour for the eye dot"
                                     disabled=move || {
                                         state.dot_color.get() == state.eye_color.get()
                                     }
                                     on:click=move |_| state.dot_color.set(state.eye_color.get())
                                 >
-                                    <Copy size=11 />
+                                    "Match Frame"
                                 </button>
                                 <HexValue
                                     state=state
