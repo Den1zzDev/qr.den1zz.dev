@@ -151,7 +151,7 @@ This is an Operate surface. The controls are native where a native control exist
 - One centred column, 45rem at its widest, with 20 to 24-pixel gaps between trays.
 - A single cyan signal used for the wordmark, selection, the primary export, links, and focus.
 - Pill buttons, 10-pixel control corners, 16-pixel trays, circular swatches.
-- A black matted viewfinder around the code, with a four-module quiet zone inside it.
+- A black matted viewfinder around the code, with a two-module quiet zone inside it.
 - Every styling decision reports a measurable consequence: contrast ratio, version, matrix size, error level, byte count.
 
 ## Colors
@@ -297,7 +297,7 @@ Trays and the viewfinder use 16 pixels. Fields and option rows use 10 pixels, an
 
 ### Preview
 - **Status pill:** above the viewfinder, centred, Sunken Black with a Control Line border, 11-pixel tabular text. It carries a 6-pixel LED, the state (`Contrast passes` or `Low contrast`), the three ratios, and the version, matrix size, and error level. Below 480px the ratios and separators hide and the pill keeps the state and metadata, wrapping to two centred lines when the width cannot hold both; the ratios stay available in the palette.
-- **Viewfinder:** a 16-pixel stage, black mat, 12-pixel inner padding, a one-pixel inset ring, and an inset vignette. The code is square and can grow to 25rem. The white margin inside the SVG is the four-module quiet zone, not CSS padding.
+- **Viewfinder:** a 16-pixel stage, black mat, 20-pixel inner padding, a one-pixel inset ring, and an inset vignette. The code is square and can grow to 25rem. The white margin inside the SVG is the two-module quiet zone, not CSS padding.
 - **Transparent:** the mat becomes the light checkerboard so black modules stay visible and the exported transparency is obvious.
 - **Caveat:** one line under the stage. It says `Contrast checked. Test-scan before printing.`, switches to `Contrast checked against white.` when the background is transparent, and turns amber with `Contrast is below 3:1. Adjust the palette before exporting.` when a role fails. A transparent failure keeps the white surface in the sentence.
 - **Export size:** the segmented pills, the physical print size at 300 dpi, then a two-column grid: Download PNG and Download SVG, Copy PNG and Copy SVG.
@@ -334,7 +334,7 @@ Trays and the viewfinder use 16 pixels. Fields and option rows use 10 pixels, an
 - **Do** keep the centred single-column stack. It is the `cadd240` composition.
 - **Do** use cyan for selection, the wordmark, links, focus, and the one primary export.
 - **Do** show the measured contrast ratio next to each colour control and in the status pill.
-- **Do** keep the four-module quiet zone in the preview and every export.
+- **Do** keep a light quiet zone in the preview and every export. This studio uses two modules, which is compact but still decodes; the code's margin is part of the rendered output, not padding around it.
 - **Do** show the physical print size under the export size.
 - **Do** keep the code's ground white or light, and let a transparent export show the checkerboard.
 - **Do** keep sensitive payloads summarised without Wi-Fi passwords or email bodies.

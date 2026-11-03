@@ -112,7 +112,7 @@ The short version: AMOLED black, one cyan signal colour, a single monospace fami
 
 One centred column, 45rem at its widest, stacks the payload, preview, shapes, palette, and logo trays in that order. There is no desktop two-column split. Cyan marks the wordmark, the selected option, the selected export size, the primary export, links, and keyboard focus; a selected control is a cyan fill with black text. Below 1024 pixels, a fixed quick-action bar takes over once the preview scrolls out of view.
 
-Controls are pill buttons, 10-pixel fields, 32-pixel segments and swatches, and 16-pixel trays. The code sits in a black matted viewfinder with a four-module quiet zone. Every styled control must show its cost, whether that is a contrast ratio, a byte count, or an error message.
+Controls are pill buttons, 10-pixel fields, 32-pixel segments and swatches, and 16-pixel trays. The code sits in a black matted viewfinder with a two-module quiet zone. Every styled control must show its cost, whether that is a contrast ratio, a byte count, or an error message.
 
 When you add a control:
 

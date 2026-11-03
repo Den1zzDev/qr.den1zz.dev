@@ -45,7 +45,7 @@ The preview footer summarises Wi-Fi, vCard, email, and crypto payloads instead o
 └── vercel.json                        # Header and routing configuration
 ```
 
-The site is a single page. One centred column, 45rem at its widest, stacks the payload, preview, shapes, palette, and logo trays in the order the work happens. There is no two-column desktop layout. The code sits in a black matted viewfinder inside the preview tray, on a square stage with a four-module quiet zone, and the stage switches to a checkerboard when the background is transparent. Below 1024 pixels, a fixed quick-action bar keeps the PNG export reachable once the preview scrolls out of view.
+The site is a single page. One centred column, 45rem at its widest, stacks the payload, preview, shapes, palette, and logo trays in the order the work happens. There is no two-column desktop layout. The code sits in a black matted viewfinder inside the preview tray, on a square stage with a two-module quiet zone, and the stage switches to a checkerboard when the background is transparent. Below 1024 pixels, a fixed quick-action bar keeps the PNG export reachable once the preview scrolls out of view.
 
 ## Prerequisites
 
