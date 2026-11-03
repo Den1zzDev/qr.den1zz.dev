@@ -79,6 +79,7 @@ pub(crate) fn MobileDock(
                     let passes = ratios.is_acceptable();
                     let bytes = sanitized.get().cleaned_bytes;
                     let svg = rendered.svg.clone();
+                    let thumb_svg = rendered.svg;
                     let title = format!(
                         "V{} · {}×{}",
                         rendered.matrix.version,
@@ -100,7 +101,13 @@ pub(crate) fn MobileDock(
                     };
 
                     view! {
-                        <div class="dock-qr" aria-hidden="true" inner_html=rendered.svg></div>
+                        // The thumbnail is only mounted while the bar is
+                        // visible. Until then the full SVG stays out of the
+                        // initial document, which avoids shipping the same
+                        // path data twice.
+                        {move || (!qr_visible.get()).then(|| view! {
+                            <div class="dock-qr" aria-hidden="true" inner_html=thumb_svg.clone()></div>
+                        })}
                         <div class="dock-info">
                             <p class="dock-title">{title}</p>
                             <p class=sub_class>{sub_text}</p>

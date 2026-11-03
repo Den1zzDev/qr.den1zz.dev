@@ -33,6 +33,8 @@
     --success: #34d399;
     --warning: #fbbf24;
     --danger: #fb7185;
+    --radius-xs: 0.3125rem;
+    --radius-segment: 0.4375rem;
     --radius-sm: 0.5rem;
     --radius-md: 0.625rem;
     --radius-lg: 1rem;
@@ -49,6 +51,7 @@
   html {
     background: var(--bg);
     color-scheme: dark;
+    scrollbar-color: var(--line-control) var(--bg);
     scrollbar-gutter: stable;
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
@@ -207,6 +210,7 @@
   font-size: 0.75rem;
   line-height: 1.5;
   color: var(--text-muted);
+  text-wrap: pretty;
 }
 
 .header-actions {
@@ -291,9 +295,9 @@
 
 .studio-intro__copy {
   margin-top: 0.35rem;
-  max-width: 60ch;
-  font-size: 0.8125rem;
-  line-height: 1.65;
+  max-width: 66ch;
+  font-size: 0.875rem;
+  line-height: 1.6;
   color: var(--text-muted);
   text-wrap: pretty;
 }
@@ -382,6 +386,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  margin-inline-start: auto;
   color: var(--text-dim);
   text-decoration: none;
 }
@@ -421,12 +426,6 @@
   color: #b8b8b8;
 }
 
-.panel__hint {
-  margin-top: 0.25rem;
-  font-size: 0.72rem;
-  color: var(--text-faint);
-}
-
 @media (min-width: 640px) {
   .panel__head {
     padding: 1.125rem 1.25rem 0;
@@ -453,6 +452,11 @@
   font-size: 0.75rem;
   line-height: 1.5;
   color: var(--text-muted);
+  text-wrap: pretty;
+}
+
+.field-hint--error {
+  color: var(--danger);
 }
 
 .field {
@@ -584,25 +588,10 @@ textarea.field {
   color: var(--text);
 }
 
-.btn--danger {
-  background: transparent;
-  border-color: rgba(251, 113, 133, 0.35);
-  color: var(--danger);
-}
-
-.btn--danger:hover:not(:disabled) {
-  border-color: var(--danger);
-  background: rgba(251, 113, 133, 0.08);
-}
-
 .btn--sm {
   min-height: 2rem;
   padding: 0 0.75rem;
   font-size: 0.75rem;
-}
-
-.btn--block {
-  width: 100%;
 }
 
 .link-button {
@@ -639,11 +628,6 @@ textarea.field {
   margin: 0;
   accent-color: var(--accent);
   cursor: pointer;
-}
-
-.check--disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
 }
 
 .check--compact {
@@ -824,7 +808,17 @@ textarea.field {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  min-width: 0;
+}
+
+.color-row__meta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.35rem;
   min-width: 0;
 }
 
@@ -836,17 +830,50 @@ textarea.field {
 }
 
 .color-row__hex {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+  padding: 0 0.2rem;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: color 120ms ease, background 120ms ease;
 }
 
-.color-row__tools {
-  display: flex;
+.color-row__hex:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--surface-raised);
+}
+
+.color-row__hex:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.icon-link {
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  min-width: 0;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-segment);
+  color: var(--accent);
+  transition: color 120ms ease, background 120ms ease;
+}
+
+.icon-link:hover:not(:disabled) {
+  color: var(--accent-bright);
+  background: var(--accent-wash);
+}
+
+.icon-link:disabled {
+  cursor: default;
+  opacity: 0.3;
 }
 
 .color-row__swatches {
@@ -1051,6 +1078,40 @@ textarea.field {
   object-fit: contain;
 }
 
+.qr-stage__scan {
+  position: absolute;
+  z-index: 1;
+  inset-inline: 0;
+  top: 0;
+  height: 36%;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(0, 240, 255, 0.08) 66%,
+    rgba(0, 240, 255, 0.34) 98%,
+    transparent
+  );
+  pointer-events: none;
+  opacity: 0;
+  animation: qr-scan 1050ms var(--ease-out) 160ms both;
+}
+
+@keyframes qr-scan {
+  0% {
+    transform: translateY(-112%);
+    opacity: 0;
+  }
+
+  22% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(326%);
+    opacity: 0;
+  }
+}
+
 .qr-stage__empty {
   display: flex;
   flex-direction: column;
@@ -1082,6 +1143,7 @@ textarea.field {
   font-size: 0.75rem;
   line-height: 1.6;
   color: var(--text-muted);
+  text-wrap: pretty;
 }
 
 .spec-grid {
@@ -1170,6 +1232,7 @@ textarea.field {
   font-size: 0.75rem;
   line-height: 1.5;
   color: var(--text-dim);
+  text-wrap: pretty;
 }
 
 .preview__caveat--warn {
@@ -1210,11 +1273,13 @@ textarea.field {
   line-height: 1.4;
   color: var(--text-dim);
   opacity: 0;
-  transition: opacity 160ms ease;
+  transform: translateY(3px);
+  transition: opacity 160ms ease, transform 160ms var(--ease-out);
 }
 
 .notice.is-visible {
   opacity: 1;
+  transform: none;
 }
 
 .notice--success {
@@ -1223,21 +1288,6 @@ textarea.field {
 
 .notice--error {
   color: var(--danger);
-}
-
-.preview__privacy {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.4rem;
-  font-size: 0.6875rem;
-  line-height: 1.5;
-  color: var(--text-faint);
-}
-
-.preview__privacy svg {
-  flex: 0 0 auto;
-  margin-top: 0.1rem;
-  color: var(--accent-dim);
 }
 
 .preview__error {
@@ -1263,6 +1313,7 @@ textarea.field {
   font-size: 0.75rem;
   line-height: 1.6;
   color: var(--text-dim);
+  text-wrap: pretty;
 }
 
 /* ---------- Payload note ---------- */
@@ -1392,6 +1443,7 @@ textarea.field {
   font-size: 0.6875rem;
   line-height: 1.5;
   color: var(--text-muted);
+  text-wrap: pretty;
 }
 
 .dropzone__error {
@@ -1620,8 +1672,16 @@ textarea.field {
 /* ---------- Motion ---------- */
 
 @media (prefers-reduced-motion: reduce) {
+  .qr-stage__scan {
+    display: none;
+  }
+
   .glide-select[data-swap] .glide-select__label {
     animation: none;
+  }
+
+  .notice {
+    transform: none;
   }
 
   .swatch:hover,
@@ -1690,6 +1750,7 @@ textarea.field {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--text);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1698,6 +1759,7 @@ textarea.field {
 .dock-sub {
   font-size: 0.6875rem;
   color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

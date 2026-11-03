@@ -37,7 +37,7 @@ fn Shell() -> impl IntoView {
             <head>
                 <meta charset="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-                <title>"qr.den1zz.dev — Local QR code studio"</title>
+                <title>"qr.den1zz.dev · Local QR code studio"</title>
                 <meta
                     name="description"
                     content="Design a QR code, tune the modules and colours, and export a print-ready PNG or SVG. Everything runs in your browser."

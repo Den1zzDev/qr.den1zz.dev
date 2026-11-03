@@ -1,6 +1,7 @@
 //! QR preview, scannability indicators, and export actions.
 
 use std::rc::Rc;
+use std::time::Duration;
 
 use leptos::prelude::*;
 use qr_core::contrast::MIN_GRAPHIC_CONTRAST;
@@ -51,6 +52,18 @@ pub(crate) fn PreviewPanel(
     sanitized: Memo<SanitizedPayload>,
 ) -> impl IntoView {
     let transparent = Signal::derive(move || state.is_transparent_background.get());
+
+    // One decorative scan pass over the code once the page takes over. The span
+    // is removed from the DOM afterwards, so the preview itself never animates
+    // while the user types or tunes a colour.
+    let (show_scan, set_show_scan) = signal(false);
+    Effect::new(move |_| {
+        set_show_scan.set(true);
+        set_timeout(
+            move || set_show_scan.set(false),
+            Duration::from_millis(1400),
+        );
+    });
 
     view! {
         <div class="panel preview">
@@ -177,6 +190,9 @@ pub(crate) fn PreviewPanel(
                                 role="img"
                                 aria-label=format!("QR code encoding {summary}")
                             >
+                                {move || show_scan.get().then(|| view! {
+                                    <span class="qr-stage__scan" aria-hidden="true"></span>
+                                })}
                                 <div class="qr-stage__canvas" inner_html=svg.as_str().to_string()></div>
                             </div>
 
@@ -368,6 +384,14 @@ pub(crate) fn PreviewPanel(
                                     ("Dots", ratios.eye_dot),
                                 ].into_iter().map(|(label, ratio)| {
                                     let passes = ratio >= MIN_GRAPHIC_CONTRAST;
+                                    let description = format!(
+                                        "{label} contrast {ratio:.1} to 1, {}",
+                                        if passes {
+                                            "meets the 3 to 1 minimum"
+                                        } else {
+                                            "below the 3 to 1 minimum"
+                                        },
+                                    );
                                     view! {
                                         <span
                                             class=if passes {
@@ -375,14 +399,8 @@ pub(crate) fn PreviewPanel(
                                             } else {
                                                 "ratio-chip ratio-chip--fail"
                                             }
-                                            title=format!(
-                                                "{label} contrast {ratio:.1} to 1, {}",
-                                                if passes {
-                                                    "meets the 3 to 1 minimum"
-                                                } else {
-                                                    "below the 3 to 1 minimum"
-                                                },
-                                            )
+                                            title=description.clone()
+                                            aria-label=description
                                         >
                                             <span class="ratio-chip__dot" aria-hidden="true"></span>
                                             <span>{label}</span>

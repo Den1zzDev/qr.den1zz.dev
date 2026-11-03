@@ -116,7 +116,8 @@ When you add a control:
 - Give it a label, a focus state, and a disabled state.
 - Use the `--line-control` border token, which clears the 3:1 non-text contrast floor.
 - Keep touch targets at least 24 CSS pixels in both axes.
-- Respect `prefers-reduced-motion`.
+- Respect `prefers-reduced-motion`. The preview's scan pass is decorative and must disappear under that preference.
+- Keep copy confirmations in the shared notice line rather than adding a second toast or banner.
 
 ## Assets
 

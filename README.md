@@ -2,12 +2,12 @@
 
 QR Code Studio is a QR code generator that runs in the browser. It is written in Rust and compiled to WebAssembly with Leptos. Generation, styling, contrast checks, and export all happen in the tab; the studio sends no payload data over the network.
 
-Live instance: [qr.den1zz.dev](https://qr.den1zz.dev)
+Live site: [qr.den1zz.dev](https://qr.den1zz.dev)
 
 ## What it does
 
 - **Payload types**: links, plain text, Wi-Fi credentials, vCard 3.0 contacts, email drafts, phone numbers, location coordinates, and crypto payment URIs.
-- **Styling**: four module shapes, three eye frame shapes, three eye dot shapes, separate colours for modules, eye frame, eye dot, and background, a transparent background, and an optional centre logo.
+- **Styling**: four module shapes, three eye frame shapes, three eye dot shapes, separate colours for modules, eye frame, eye dot, and background, a transparent background, and an optional centre logo. Each palette hex readout copies its value when clicked.
 - **Contrast checks**: each coloured region is measured against the background. A region below 3:1 is marked amber in the palette and in the preview.
 - **Exports**: PNG at 512, 1024, or 2048 pixels, PNG copied to the clipboard, standalone SVG, and raw SVG copied to the clipboard.
 - **Offline use**: a service worker caches the site after the first load, and the page installs as a PWA.
@@ -29,7 +29,7 @@ The studio checks contrast. It does not decode the generated code in the browser
 | Location | `geo:` | RFC 5870 coordinates with an optional place label. |
 | Crypto | BIP-21-style URI | Bitcoin, Ethereum, Solana, Monero, and Litecoin. Amounts are normalised without floating-point arithmetic. |
 
-The preview footer summarises Wi-Fi, vCard, email, and crypto payloads instead of echoing them, so a Wi-Fi password or an email body does not appear in plain text.
+The preview footer summarises Wi-Fi, vCard, email, and crypto payloads instead of echoing them, so a Wi-Fi password or an email body does not appear in plain text. If a coordinate pair or crypto amount is incomplete or invalid, the preview stays empty and the field explains what is missing.
 
 ## Workspace layout
 

@@ -142,18 +142,15 @@ pub fn App() -> impl IntoView {
 
         <footer class="site-footer">
             <span>"MIT licensed. Built with Rust and WebAssembly."</span>
-            <div class="flex items-center gap-4">
-                <a
-                    href=REPOSITORY_URL
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="inline-flex items-center gap-1"
-                >
-                    "Source"
-                    <External size=12 />
-                </a>
-                <a href="#">"Back to top"</a>
-            </div>
+            <a
+                href=REPOSITORY_URL
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-1"
+            >
+                "Source"
+                <External size=12 />
+            </a>
         </footer>
 
         <MobileDock

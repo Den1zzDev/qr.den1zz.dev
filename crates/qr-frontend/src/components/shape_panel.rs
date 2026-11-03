@@ -21,6 +21,7 @@ pub(crate) fn ShapePanel(state: StudioState) -> impl IntoView {
                 <button
                     type="button"
                     class="link-button"
+                    aria-label="Reset module and eye shapes"
                     on:click=move |_| state.reset_shapes()
                 >
                     "Reset"

@@ -36,6 +36,25 @@ pub(crate) const DEFAULT_DOT_COLOR: &str = "#008b99";
 /// Default background colour.
 pub(crate) const DEFAULT_BACKGROUND_COLOR: &str = "#ffffff";
 
+/// Parses a latitude and longitude pair, returning `None` when either value is
+/// missing, non-finite, or outside its valid range.
+pub(crate) fn parse_geo_pair(latitude: &str, longitude: &str) -> Option<(f64, f64)> {
+    let latitude = latitude.trim().parse::<f64>().ok()?;
+    let longitude = longitude.trim().parse::<f64>().ok()?;
+    let in_range = latitude.is_finite()
+        && longitude.is_finite()
+        && latitude.abs() <= 90.0
+        && longitude.abs() <= 180.0;
+    in_range.then_some((latitude, longitude))
+}
+
+/// Returns a payload that encodes nothing, used when a form state is invalid.
+fn empty_payload() -> Payload {
+    Payload::Text {
+        text: String::new(),
+    }
+}
+
 /// A rendered code and the SVG that represents it.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct RenderedCode {
@@ -243,38 +262,35 @@ impl StudioState {
                 let latitude = self.geo_latitude.get();
                 let longitude = self.geo_longitude.get();
                 let query = self.geo_query.get();
-                match (
-                    latitude.trim().parse::<f64>(),
-                    longitude.trim().parse::<f64>(),
-                ) {
-                    (Ok(latitude), Ok(longitude))
-                        if latitude.is_finite()
-                            && longitude.is_finite()
-                            && latitude.abs() <= 90.0
-                            && longitude.abs() <= 180.0 =>
-                    {
-                        Payload::Geo {
-                            latitude,
-                            longitude,
-                            query,
-                        }
-                    }
-                    // An invalid or incomplete pair must not silently encode a
-                    // clamped or zero coordinate. The field hints explain why.
-                    _ => Payload::Geo {
-                        latitude: 0.0,
-                        longitude: 0.0,
-                        query: String::new(),
+                // An invalid or incomplete pair must not silently encode a
+                // clamped or zero coordinate. The field hints explain why.
+                match parse_geo_pair(&latitude, &longitude) {
+                    Some((latitude, longitude)) => Payload::Geo {
+                        latitude,
+                        longitude,
+                        query,
                     },
+                    None => empty_payload(),
                 }
             }
-            PayloadTab::Crypto => Payload::Crypto {
-                currency: self.crypto_currency.get(),
-                address: self.crypto_address.get(),
-                amount: self.crypto_amount.get(),
-                message: self.crypto_message.get(),
-                label: String::new(),
-            },
+            PayloadTab::Crypto => {
+                let amount = self.crypto_amount.get();
+                // An invalid amount must not produce a code that looks like a
+                // payment request while silently dropping the amount.
+                let amount_is_valid =
+                    amount.trim().is_empty() || payload::normalize_crypto_amount(&amount).is_some();
+                if amount_is_valid {
+                    Payload::Crypto {
+                        currency: self.crypto_currency.get(),
+                        address: self.crypto_address.get(),
+                        amount,
+                        message: self.crypto_message.get(),
+                        label: String::new(),
+                    }
+                } else {
+                    empty_payload()
+                }
+            }
         }
     }
 
@@ -360,5 +376,28 @@ impl StudioState {
         self.module_shape.set(ModuleShape::Classy);
         self.eye_frame_shape.set(EyeFrameShape::Rounded);
         self.eye_dot_shape.set(EyeDotShape::Circle);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_geo_pair;
+
+    #[test]
+    fn parses_coordinates_inside_their_ranges() {
+        assert_eq!(
+            parse_geo_pair("41.0082", "28.9784"),
+            Some((41.0082, 28.9784))
+        );
+        assert_eq!(parse_geo_pair("-90", "180"), Some((-90.0, 180.0)));
+    }
+
+    #[test]
+    fn rejects_missing_and_out_of_range_coordinates() {
+        assert_eq!(parse_geo_pair("", "28.9784"), None);
+        assert_eq!(parse_geo_pair("41.0082", ""), None);
+        assert_eq!(parse_geo_pair("90.1", "0"), None);
+        assert_eq!(parse_geo_pair("0", "-180.1"), None);
+        assert_eq!(parse_geo_pair("north", "0"), None);
     }
 }
