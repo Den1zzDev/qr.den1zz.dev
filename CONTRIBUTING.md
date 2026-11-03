@@ -108,7 +108,7 @@ Conventions worth knowing:
 
 The visual system is documented in [DESIGN.md](DESIGN.md), with the product record in [PRODUCT.md](PRODUCT.md). Read both before changing the interface.
 
-The short version: AMOLED black, one cyan signal colour, a single monospace family, flat panels with hairline borders, and amber for a failed measurement. Every styled control must show its cost, whether that is a contrast ratio, a byte count, or an error message. The preview stays next to the controls on desktop and a fixed quick-action bar takes over once it scrolls away on smaller screens.
+The short version: AMOLED black, one cyan signal colour, a single monospace family, flat surfaces with hairline borders, and amber for a failed measurement. Cyan is reserved for the wordmark, the primary export, and keyboard focus; selection is white text on a raised surface. Every styled control must show its cost, whether that is a contrast ratio, a byte count, or an error message. The preview stays next to the controls on desktop and a fixed quick-action bar takes over once it scrolls away on smaller screens.
 
 When you add a control:
 

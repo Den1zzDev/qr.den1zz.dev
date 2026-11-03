@@ -45,7 +45,7 @@ The preview footer summarises Wi-Fi, vCard, email, and crypto payloads instead o
 └── vercel.json                        # Header and routing configuration
 ```
 
-The site is a single page. It uses a two-column workspace above 1024 pixels and a single column below that. The generated code sits in a square stage with a four-module quiet zone, and the stage switches to a checkerboard when the background is transparent. On phones and tablets, a fixed quick-action bar keeps the PNG export reachable while the styling panels are in view.
+The site is a single page. It uses a two-column workspace above 1024 pixels and a single column below that. The generated code sits in a square stage with a four-module quiet zone, and the stage switches to a checkerboard when the background is transparent. On phones and tablets, a fixed quick-action bar keeps the PNG export reachable while the styling console is in view.
 
 ## Prerequisites
 

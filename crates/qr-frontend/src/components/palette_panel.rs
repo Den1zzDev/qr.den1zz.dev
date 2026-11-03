@@ -323,9 +323,9 @@ pub(crate) fn PalettePanel(state: StudioState, contrast: Memo<ContrastRatios>) -
 
                 <p class="field-hint">
                     {move || if transparent.get() {
-                        "Contrast is checked against white. Transparent exports need a light surface. Click a hex value to copy it."
+                        "Contrast is checked against white. Transparent exports need a light surface. Click a hex to copy."
                     } else {
-                        "Contrast is measured against the background colour. Click a hex value to copy it."
+                        "Contrast is measured against the background. Click a hex to copy."
                     }}
                 </p>
             </div>

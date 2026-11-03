@@ -492,7 +492,9 @@ pub fn render_svg(matrix: &QrMatrix, config: &VectorRenderConfig) -> String {
                     ModuleShape::Dots => {
                         let center_x = x_position + scale / 2.0;
                         let center_y = y_position + scale / 2.0;
-                        push_circle(&mut body_path, center_x, center_y, scale * 0.44);
+                        // A half-module radius lets neighbouring dots touch,
+                        // which keeps the grid readable to common decoders.
+                        push_circle(&mut body_path, center_x, center_y, scale * 0.5);
                     }
                     ModuleShape::Smooth => {
                         let top = y > 0 && is_active(x, y - 1);
@@ -567,7 +569,9 @@ pub fn render_svg(matrix: &QrMatrix, config: &VectorRenderConfig) -> String {
                 );
             }
             EyeFrameShape::Rounded => {
-                let radius = scale * 1.8;
+                // One module of corner radius leaves enough of the finder
+                // pattern square for common decoders to lock on.
+                let radius = scale;
                 let inner_radius = (radius - scale).max(0.0);
                 let straight = frame_size - 2.0 * radius;
                 let inner_straight = (frame_size - 2.0 * scale) - 2.0 * inner_radius;

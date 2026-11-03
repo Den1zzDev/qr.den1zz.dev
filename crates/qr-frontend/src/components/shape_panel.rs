@@ -9,6 +9,7 @@ use crate::components::icons::Check;
 use crate::components::icons::EyeDotGlyph;
 use crate::components::icons::EyeFrameGlyph;
 use crate::components::icons::ModuleShapeGlyph;
+use crate::components::icons::Warning;
 use crate::studio_state::StudioState;
 
 /// Shape selectors for modules and finder patterns.
@@ -120,6 +121,12 @@ pub(crate) fn ShapePanel(state: StudioState) -> impl IntoView {
                         </div>
                     </fieldset>
                 </div>
+                {move || (state.eye_frame_shape.get() == EyeFrameShape::Circle).then(|| view! {
+                    <p class="field-hint field-hint--warn" role="status">
+                        <Warning size=12 />
+                        "Circular eye frames may fail some scanners. Test-scan before printing."
+                    </p>
+                })}
             </div>
         </div>
     }
