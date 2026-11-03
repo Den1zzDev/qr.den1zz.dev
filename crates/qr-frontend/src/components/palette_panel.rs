@@ -3,7 +3,9 @@
 use leptos::prelude::*;
 use qr_core::contrast::MIN_GRAPHIC_CONTRAST;
 
+use crate::browser;
 use crate::components::icons::Check;
+use crate::components::icons::Copy;
 use crate::components::icons::Pipette;
 use crate::components::icons::Warning;
 use crate::studio_state::ContrastRatios;
@@ -109,6 +111,39 @@ fn Swatches(
     }
 }
 
+/// Readout that copies its colour value when clicked.
+#[component]
+fn HexValue(
+    state: StudioState,
+    value: RwSignal<String>,
+    label: &'static str,
+    disabled: Signal<bool>,
+) -> impl IntoView {
+    view! {
+        <button
+            type="button"
+            class="color-row__hex"
+            title=move || format!("Copy {}", value.get())
+            aria-label=move || format!("Copy {label} {}", value.get())
+            disabled=move || disabled.get()
+            on:click=move |_| {
+                let hex = value.get_untracked();
+                let message = format!("{label} {hex} copied");
+                let outcome = browser::copy_text(
+                    &hex,
+                    move || state.notify(&message, false),
+                    move |error| state.notify(&error, true),
+                );
+                if let Err(error) = outcome {
+                    state.notify(&error, true);
+                }
+            }
+        >
+            {move || value.get()}
+        </button>
+    }
+}
+
 /// Colour pickers for every coloured region of the code.
 #[component]
 pub(crate) fn PalettePanel(state: StudioState, contrast: Memo<ContrastRatios>) -> impl IntoView {
@@ -121,6 +156,7 @@ pub(crate) fn PalettePanel(state: StudioState, contrast: Memo<ContrastRatios>) -
                 <button
                     type="button"
                     class="link-button"
+                    aria-label="Reset the palette to the default colours"
                     on:click=move |_| state.reset_palette()
                 >
                     "Reset"
@@ -131,9 +167,14 @@ pub(crate) fn PalettePanel(state: StudioState, contrast: Memo<ContrastRatios>) -
                     <div class="color-row">
                         <div class="color-row__head">
                             <span class="color-row__name">"Modules"</span>
-                            <span class="flex items-center gap-2">
+                            <span class="color-row__meta">
                                 {move || ratio_badge(contrast.get().modules, "Module")}
-                                <span class="color-row__hex">{move || state.module_color.get()}</span>
+                                <HexValue
+                                    state=state
+                                    value=state.module_color
+                                    label="Module colour"
+                                    disabled=Signal::derive(|| false)
+                                />
                             </span>
                         </div>
                         <CustomColor
@@ -152,19 +193,26 @@ pub(crate) fn PalettePanel(state: StudioState, contrast: Memo<ContrastRatios>) -
                     <div class="color-row">
                         <div class="color-row__head">
                             <span class="color-row__name">"Eye frame"</span>
-                            <span class="flex items-center gap-2">
+                            <span class="color-row__meta">
                                 {move || ratio_badge(contrast.get().eye_frame, "Eye frame")}
                                 <button
                                     type="button"
-                                    class="link-button"
-                                    title="Copy the module colour"
+                                    class="icon-link"
+                                    title="Use the module colour"
+                                    aria-label="Use the module colour"
                                     disabled=move || {
                                         state.eye_color.get() == state.module_color.get()
                                     }
                                     on:click=move |_| state.eye_color.set(state.module_color.get())
                                 >
-                                    "= Modules"
+                                    <Copy size=11 />
                                 </button>
+                                <HexValue
+                                    state=state
+                                    value=state.eye_color
+                                    label="Eye frame colour"
+                                    disabled=Signal::derive(|| false)
+                                />
                             </span>
                         </div>
                         <CustomColor
@@ -183,19 +231,26 @@ pub(crate) fn PalettePanel(state: StudioState, contrast: Memo<ContrastRatios>) -
                     <div class="color-row">
                         <div class="color-row__head">
                             <span class="color-row__name">"Eye dot"</span>
-                            <span class="flex items-center gap-2">
+                            <span class="color-row__meta">
                                 {move || ratio_badge(contrast.get().eye_dot, "Eye dot")}
                                 <button
                                     type="button"
-                                    class="link-button"
-                                    title="Copy the eye frame colour"
+                                    class="icon-link"
+                                    title="Use the eye frame colour"
+                                    aria-label="Use the eye frame colour"
                                     disabled=move || {
                                         state.dot_color.get() == state.eye_color.get()
                                     }
                                     on:click=move |_| state.dot_color.set(state.eye_color.get())
                                 >
-                                    "= Frame"
+                                    <Copy size=11 />
                                 </button>
+                                <HexValue
+                                    state=state
+                                    value=state.dot_color
+                                    label="Eye dot colour"
+                                    disabled=Signal::derive(|| false)
+                                />
                             </span>
                         </div>
                         <CustomColor
@@ -214,16 +269,24 @@ pub(crate) fn PalettePanel(state: StudioState, contrast: Memo<ContrastRatios>) -
                     <div class="color-row">
                         <div class="color-row__head">
                             <span class="color-row__name">"Background"</span>
-                            <label class="check check--compact">
-                                <input
-                                    type="checkbox"
-                                    prop:checked=move || state.is_transparent_background.get()
-                                    on:change=move |event| {
-                                        state.is_transparent_background.set(event_target_checked(&event));
-                                    }
+                            <span class="color-row__meta">
+                                <label class="check check--compact">
+                                    <input
+                                        type="checkbox"
+                                        prop:checked=move || state.is_transparent_background.get()
+                                        on:change=move |event| {
+                                            state.is_transparent_background.set(event_target_checked(&event));
+                                        }
+                                    />
+                                    <span>"Transparent"</span>
+                                </label>
+                                <HexValue
+                                    state=state
+                                    value=state.background_color
+                                    label="Background colour"
+                                    disabled=transparent
                                 />
-                                <span>"Transparent"</span>
-                            </label>
+                            </span>
                         </div>
                         <CustomColor
                             value=state.background_color
@@ -260,9 +323,9 @@ pub(crate) fn PalettePanel(state: StudioState, contrast: Memo<ContrastRatios>) -
 
                 <p class="field-hint">
                     {move || if transparent.get() {
-                        "Contrast is checked against white. Transparent exports need a light surface."
+                        "Contrast is checked against white. Transparent exports need a light surface. Click a hex to copy."
                     } else {
-                        "Contrast is measured against the background colour."
+                        "Contrast is measured against the background. Click a hex to copy."
                     }}
                 </p>
             </div>

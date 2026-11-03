@@ -29,7 +29,7 @@ The entire generator, styler, and contrast checker is Rust compiled to WebAssemb
 ## Capabilities and Constraints
 
 - Payloads: URL with tracking-parameter cleanup, plain text, Wi-Fi credentials, vCard 3.0, `mailto:`, `tel:`, `geo:`, and BIP-21-style crypto payment URIs.
-- Styling: four module shapes, three eye frame shapes, three eye dot shapes, independent colours for modules, eye frame, eye dot, and background, transparent background, and an optional centre logo.
+- Styling: four module shapes, three eye frame shapes, three eye dot shapes, independent colours for modules, eye frame, eye dot, and background, transparent background, and an optional centre logo. Palette hex values can be copied from the readout.
 - Encoding: automatic error correction selection, raised to level H when a logo is present.
 - Export: PNG at 512, 1024, or 2048 pixels, PNG clipboard copy, SVG download, and SVG clipboard copy.
 - Scannability: WCAG contrast ratio for each coloured region against the background, with a 3:1 minimum. The browser build does not decode the generated code; the server crate exposes a separate verification endpoint.

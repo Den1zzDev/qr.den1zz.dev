@@ -1,6 +1,7 @@
 //! QR preview, scannability indicators, and export actions.
 
 use std::rc::Rc;
+use std::time::Duration;
 
 use leptos::prelude::*;
 use qr_core::contrast::MIN_GRAPHIC_CONTRAST;
@@ -52,55 +53,34 @@ pub(crate) fn PreviewPanel(
 ) -> impl IntoView {
     let transparent = Signal::derive(move || state.is_transparent_background.get());
 
+    // One decorative scan pass over the code once the page takes over. The span
+    // is removed from the DOM afterwards, so the preview itself never animates
+    // while the user types or tunes a colour.
+    let (show_scan, set_show_scan) = signal(false);
+    Effect::new(move |_| {
+        set_show_scan.set(true);
+        set_timeout(
+            move || set_show_scan.set(false),
+            Duration::from_millis(1400),
+        );
+    });
+
     view! {
         <div class="panel preview">
             <p class="sr-only" role="status" aria-live="polite">
                 {move || match result.get() {
                     PreviewState::Empty => "Waiting for content.",
                     PreviewState::Error(_) => "The payload could not be encoded.",
-                    PreviewState::Ready(_) => "",
+                    PreviewState::Ready(_) if contrast.get().is_acceptable() => {
+                        "Code ready. Contrast passes."
+                    }
+                    PreviewState::Ready(_) => "Code ready. Low contrast.",
                 }}
             </p>
 
             <div class="preview__top">
                 <h2 class="panel__title">"Preview"</h2>
-                {move || {
-                    let ratios = contrast.get();
-                    let transparent = state.is_transparent_background.get();
-                    match result.get() {
-                        PreviewState::Empty => view! {
-                            <span class="status">
-                                <span class="ratio-chip__dot" style="background: var(--text-faint)"></span>
-                                "Waiting for content"
-                            </span>
-                        }.into_any(),
-                        PreviewState::Error(_) => view! {
-                            <span class="status status--warn">
-                                <Warning size=12 />
-                                "Not generated"
-                            </span>
-                        }.into_any(),
-                        PreviewState::Ready(_) if ratios.is_acceptable() => view! {
-                            <span
-                                class="status status--pass"
-                                title=if transparent {
-                                    "The export is transparent. Ratios assume a white surface."
-                                } else {
-                                    "Every coloured region meets the 3:1 minimum against the background."
-                                }
-                            >
-                                <Check size=12 />
-                                {if transparent { "Contrast vs white" } else { "Contrast passes" }}
-                            </span>
-                        }.into_any(),
-                        PreviewState::Ready(_) => view! {
-                            <span class="status status--warn">
-                                <Warning size=12 />
-                                "Low contrast"
-                            </span>
-                        }.into_any(),
-                    }
-                }}
+                <span class="preview__format">"PNG · SVG"</span>
             </div>
 
             {move || match result.get() {
@@ -176,7 +156,11 @@ pub(crate) fn PreviewPanel(
                                 }
                                 role="img"
                                 aria-label=format!("QR code encoding {summary}")
+                                title="The white margin is the four-module quiet zone required for scanning."
                             >
+                                {move || show_scan.get().then(|| view! {
+                                    <span class="qr-stage__scan" aria-hidden="true"></span>
+                                })}
                                 <div class="qr-stage__canvas" inner_html=svg.as_str().to_string()></div>
                             </div>
 
@@ -255,6 +239,23 @@ pub(crate) fn PreviewPanel(
                                             type="button"
                                             class="btn btn--secondary"
                                             on:click=move |_| {
+                                                let outcome = browser::download_svg(
+                                                    &svg_for_svg_download,
+                                                    move || state.notify("SVG downloaded", false),
+                                                );
+                                                if let Err(error) = outcome {
+                                                    state.notify(&error, true);
+                                                }
+                                            }
+                                        >
+                                            <Download size=15 />
+                                            "Download SVG"
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            class="btn btn--ghost"
+                                            on:click=move |_| {
                                                 let resolution = state.target_resolution.get();
                                                 let outcome = browser::copy_png(
                                                     &svg_for_copy,
@@ -269,23 +270,6 @@ pub(crate) fn PreviewPanel(
                                         >
                                             <Copy size=15 />
                                             "Copy PNG"
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            class="btn btn--ghost"
-                                            on:click=move |_| {
-                                                let outcome = browser::download_svg(
-                                                    &svg_for_svg_download,
-                                                    move || state.notify("SVG downloaded", false),
-                                                );
-                                                if let Err(error) = outcome {
-                                                    state.notify(&error, true);
-                                                }
-                                            }
-                                        >
-                                            <Download size=15 />
-                                            "Download SVG"
                                         </button>
 
                                         <button
@@ -368,6 +352,14 @@ pub(crate) fn PreviewPanel(
                                     ("Dots", ratios.eye_dot),
                                 ].into_iter().map(|(label, ratio)| {
                                     let passes = ratio >= MIN_GRAPHIC_CONTRAST;
+                                    let description = format!(
+                                        "{label} contrast {ratio:.1} to 1, {}",
+                                        if passes {
+                                            "meets the 3 to 1 minimum"
+                                        } else {
+                                            "below the 3 to 1 minimum"
+                                        },
+                                    );
                                     view! {
                                         <span
                                             class=if passes {
@@ -375,14 +367,8 @@ pub(crate) fn PreviewPanel(
                                             } else {
                                                 "ratio-chip ratio-chip--fail"
                                             }
-                                            title=format!(
-                                                "{label} contrast {ratio:.1} to 1, {}",
-                                                if passes {
-                                                    "meets the 3 to 1 minimum"
-                                                } else {
-                                                    "below the 3 to 1 minimum"
-                                                },
-                                            )
+                                            title=description.clone()
+                                            aria-label=description
                                         >
                                             <span class="ratio-chip__dot" aria-hidden="true"></span>
                                             <span>{label}</span>

@@ -207,6 +207,19 @@ fn render_svg_to_canvas(
     Ok(())
 }
 
+/// Copies `text` to the clipboard.
+pub(crate) fn copy_text(
+    text: &str,
+    on_success: impl Fn() + 'static,
+    on_error: impl Fn(String) + 'static,
+) -> Result<(), String> {
+    let promise = copy_text_to_clipboard(text);
+    handle_promise(&promise, on_success, move |message| {
+        on_error(friendly_clipboard_error(message));
+    });
+    Ok(())
+}
+
 /// Downloads `svg` as a standalone SVG file.
 pub(crate) fn download_svg(svg: &str, on_success: impl Fn() + 'static) -> Result<(), String> {
     download_text(svg, "qrcode.svg", "image/svg+xml;charset=utf-8");

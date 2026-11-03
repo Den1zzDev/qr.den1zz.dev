@@ -37,7 +37,7 @@ fn Shell(css: String, timestamp: u64) -> impl IntoView {
             <head>
                 <meta charset="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-                <title>"qr.den1zz.dev — Local QR code studio"</title>
+                <title>"qr.den1zz.dev · Local QR code studio"</title>
                 <meta
                     name="description"
                     content="Design a QR code, tune the modules and colours, and export a print-ready PNG or SVG. Everything runs in your browser."
@@ -48,7 +48,7 @@ fn Shell(css: String, timestamp: u64) -> impl IntoView {
 
                 <meta property="og:type" content="website" />
                 <meta property="og:site_name" content="qr.den1zz.dev" />
-                <meta property="og:title" content="qr.den1zz.dev — Local QR code studio" />
+                <meta property="og:title" content="qr.den1zz.dev · Local QR code studio" />
                 <meta
                     property="og:description"
                     content="Design a QR code, tune the modules and colours, and export a print-ready PNG or SVG. Everything runs in your browser."
@@ -59,7 +59,7 @@ fn Shell(css: String, timestamp: u64) -> impl IntoView {
                 <meta property="og:image:height" content="630" />
                 <meta property="og:image:alt" content="qr.den1zz.dev studio wordmark beside a generated QR code" />
                 <meta name="twitter:card" content="summary_large_image" />
-                <meta name="twitter:title" content="qr.den1zz.dev — Local QR code studio" />
+                <meta name="twitter:title" content="qr.den1zz.dev · Local QR code studio" />
                 <meta
                     name="twitter:description"
                     content="Design a QR code, tune the modules and colours, and export a print-ready PNG or SVG. Everything runs in your browser."

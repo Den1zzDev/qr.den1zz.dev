@@ -81,18 +81,6 @@ pub(crate) fn Copy(#[prop(default = 16)] size: u16) -> impl IntoView {
     )
 }
 
-/// Locked-shield mark used for the local-only promise.
-#[component]
-pub(crate) fn Shield(#[prop(default = 14)] size: u16) -> impl IntoView {
-    icon_svg!(
-        size,
-        view! {
-            <path d="M12 3 5 6v5c0 4.4 2.9 8.2 7 10 4.1-1.8 7-5.6 7-10V6l-7-3Z" />
-            <path d="M9.5 12.2 11.4 14l3.4-3.6" />
-        }
-    )
-}
-
 /// Warning triangle for error and contrast states.
 #[component]
 pub(crate) fn Warning(#[prop(default = 14)] size: u16) -> impl IntoView {

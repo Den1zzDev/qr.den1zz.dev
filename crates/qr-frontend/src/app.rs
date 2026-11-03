@@ -6,7 +6,6 @@ use leptos::prelude::*;
 
 use crate::components::icons::External;
 use crate::components::icons::Github;
-use crate::components::icons::Shield;
 use crate::components::logo_panel::LogoPanel;
 use crate::components::mobile_dock::MobileDock;
 use crate::components::palette_panel::PalettePanel;
@@ -95,12 +94,11 @@ pub fn App() -> impl IntoView {
                 </div>
                 <div class="header-actions">
                     <span
-                        class="local-badge"
+                        class="header-readout"
                         title="Generation and contrast checks run in this tab. No payload data is uploaded."
                     >
-                        <span class="local-badge__dot" aria-hidden="true"></span>
-                        <Shield size=12 />
-                        <span>"Local only"</span>
+                        <span class="header-readout__led" aria-hidden="true"></span>
+                        "Local · WASM · no upload"
                     </span>
                     <a
                         class="icon-button"
@@ -141,8 +139,8 @@ pub fn App() -> impl IntoView {
         </main>
 
         <footer class="site-footer">
-            <span>"MIT licensed. Built with Rust and WebAssembly."</span>
-            <div class="flex items-center gap-4">
+            <div class="site-footer__inner">
+                <span>"MIT licensed. Built with Rust and WebAssembly."</span>
                 <a
                     href=REPOSITORY_URL
                     target="_blank"
@@ -152,7 +150,6 @@ pub fn App() -> impl IntoView {
                     "Source"
                     <External size=12 />
                 </a>
-                <a href="#">"Back to top"</a>
             </div>
         </footer>
 
