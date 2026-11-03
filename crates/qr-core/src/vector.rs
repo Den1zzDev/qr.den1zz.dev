@@ -569,10 +569,10 @@ pub fn render_svg(matrix: &QrMatrix, config: &VectorRenderConfig) -> String {
                 );
             }
             EyeFrameShape::Rounded => {
-                // One module of corner radius leaves enough of the finder
-                // pattern square for common decoders to lock on.
-                let radius = scale;
-                let inner_radius = (radius - scale).max(0.0);
+                // 1.2 modules is the largest corner radius that still decodes
+                // with the bundled verifier. The original 1.8 did not.
+                let radius = scale * 1.2;
+                let inner_radius = scale * 0.2;
                 let straight = frame_size - 2.0 * radius;
                 let inner_straight = (frame_size - 2.0 * scale) - 2.0 * inner_radius;
                 let _ = write!(
