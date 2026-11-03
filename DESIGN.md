@@ -297,7 +297,7 @@ Trays and the viewfinder use 16 pixels. Fields and option rows use 10 pixels, an
 
 ### Preview
 - **Status pill:** above the viewfinder, centred, Sunken Black with a Control Line border, 11-pixel tabular text. It carries a 6-pixel LED, the state (`Contrast passes` or `Low contrast`), the three ratios, and the version, matrix size, and error level. Below 480px the ratios and separators hide and the pill keeps the state and metadata, wrapping to two centred lines when the width cannot hold both; the ratios stay available in the palette.
-- **Viewfinder:** a 16-pixel stage, black mat, 20-pixel inner padding, a one-pixel inset ring, and an inset vignette. The code is square and can grow to 25rem. The white margin inside the SVG is the four-module quiet zone, not CSS padding.
+- **Viewfinder:** a 16-pixel stage, black mat, 12-pixel inner padding, a one-pixel inset ring, and an inset vignette. The code is square and can grow to 25rem. The white margin inside the SVG is the four-module quiet zone, not CSS padding.
 - **Transparent:** the mat becomes the light checkerboard so black modules stay visible and the exported transparency is obvious.
 - **Caveat:** one line under the stage. It says `Contrast checked. Test-scan before printing.`, switches to `Contrast checked against white.` when the background is transparent, and turns amber with `Contrast is below 3:1. Adjust the palette before exporting.` when a role fails. A transparent failure keeps the white surface in the sentence.
 - **Export size:** the segmented pills, the physical print size at 300 dpi, then a two-column grid: Download PNG and Download SVG, Copy PNG and Copy SVG.

@@ -1011,7 +1011,7 @@ textarea.field {
   max-width: 25rem;
   aspect-ratio: 1 / 1;
   margin-inline: auto;
-  padding: 1.25rem;
+  padding: 0.75rem;
   border-radius: var(--radius-lg);
   background: var(--bg);
   box-shadow:
