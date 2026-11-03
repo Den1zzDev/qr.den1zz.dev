@@ -16,7 +16,7 @@ qr.den1zz.dev is a QR code studio that runs entirely in the browser. It turns a 
 
 ## Positioning
 
-The entire generator, styler, and contrast checker is Rust compiled to WebAssembly, with no server round trip and no analytics. A hosted QR service cannot truthfully make that claim while also seeing the payload. The studio also shows the real cost of each styling decision: contrast ratios are recomputed per region and the export includes a four-module quiet zone.
+The entire generator, styler, and contrast checker is Rust compiled to WebAssembly, with no server round trip and no analytics. A hosted QR service cannot truthfully make that claim while also seeing the payload. The studio also shows the real cost of each styling decision: contrast ratios are recomputed per region and the export includes a compact two-module quiet zone.
 
 ## Operating Context
 

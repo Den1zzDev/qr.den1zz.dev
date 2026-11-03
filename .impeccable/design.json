@@ -220,7 +220,7 @@
     {
       "name": "Preview Stage",
       "kind": "card",
-      "description": "Square viewfinder for the code. 16px stage, 20px black mat, inset hairline and vignette, four-module quiet zone inside.",
+      "description": "Square viewfinder for the code. 16px stage, 20px black mat, inset hairline and vignette, two-module quiet zone inside.",
       "html": "<div class=\"ds-stage\"><div class=\"ds-stage-qr\"><span>QR</span></div></div>",
       "css": ".ds-stage { display: grid; place-items: center; width: 100%; max-width: 400px; margin-inline: auto; aspect-ratio: 1 / 1; padding: 20px; border-radius: 16px; background: #000; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12), inset 0 0 24px rgba(0,0,0,0.9); } .ds-stage-qr { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 4px; background: #fff; color: #000; font: 700 48px/1 \"Maple Mono\", ui-monospace, monospace; }"
     }
@@ -233,7 +233,7 @@
       "One centred 45rem column; the payload, preview, shapes, palette, and logo trays stack with 20 to 24-pixel gaps.",
       "One cyan signal used for the wordmark, selection, the primary export, links, and focus.",
       "Pill buttons, 10-pixel controls, 16-pixel trays, circular swatches.",
-      "A black matted viewfinder with a four-module quiet zone inside the code.",
+      "A black matted viewfinder with a two-module quiet zone inside the code.",
       "Every styling decision reports a measurable consequence."
     ],
     "rules": [
@@ -272,8 +272,8 @@
       "Do keep the centred single-column stack; it is the cadd240 composition.",
       "Do use cyan for selection, the wordmark, links, focus, and the one primary export.",
       "Do show the measured contrast ratio next to each colour control and in the status pill.",
-      "Do keep the four-module quiet zone in the preview and every export. It is part of the rendered code, not padding around it.",
-      "Do use 30% white for control borders so inputs and buttons clear the 3:1 non-text contrast floor.",
+      "Do keep a light quiet zone in the preview and every export. This studio uses two modules.",
+      "Do use 38% white for control borders and 48% for hover borders so controls clear the 3:1 non-text contrast floor.",
       "Do use tabular numerals for any value that updates while the user types.",
       "Do keep the sensitive-payload summary free of Wi-Fi passwords and email bodies.",
       "Do collapse grids by intrinsic size so 200% text never truncates a label."

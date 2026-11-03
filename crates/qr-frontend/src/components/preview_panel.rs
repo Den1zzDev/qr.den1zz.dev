@@ -207,7 +207,7 @@ pub(crate) fn PreviewPanel(
                                 }
                                 role="img"
                                 aria-label=format!("QR code encoding {summary}")
-                                title="The white margin is the four-module quiet zone required for scanning."
+                                title="The white margin is the quiet zone that keeps the code scannable."
                             >
                                 {move || show_scan.get().then(|| view! {
                                     <span class="qr-stage__scan" aria-hidden="true"></span>
@@ -215,7 +215,7 @@ pub(crate) fn PreviewPanel(
                                 <div class="qr-stage__canvas" inner_html=svg.as_str().to_string()></div>
                             </div>
                             <p class="sr-only">
-                                "The light margin around the code is the four-module quiet zone required for scanning."
+                                "The light margin around the code is its quiet zone."
                             </p>
 
                             <div class="preview__actions">

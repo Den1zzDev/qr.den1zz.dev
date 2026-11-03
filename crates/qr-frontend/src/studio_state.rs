@@ -330,7 +330,7 @@ impl StudioState {
             Some(self.background_color.get())
         };
         let config = VectorRenderConfig {
-            margin_modules: 4,
+            margin_modules: 2,
             module_shape: self.module_shape.get(),
             eye_frame_shape: self.eye_frame_shape.get(),
             eye_dot_shape: self.eye_dot_shape.get(),
